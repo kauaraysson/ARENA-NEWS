@@ -38,6 +38,8 @@
     const SUPABASE_KEY = "sb_publishable_bN16VNLMRvH8BHimENwnLw_J15rCVGT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    const CHAVE_API_SPORTS = ""; 
+
     // ÍCONES
     const IconTrophy = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>;
     const IconActivity = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>;
@@ -54,6 +56,16 @@
     const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
     const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
 
+    const CATEGORIAS_INIT = ['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC'];
+
+    const formatDateTime = (isoString) => {
+      if (!isoString) return 'Data não definida';
+      try {
+        const dateObj = new Date(isoString);
+        return dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+      } catch (e) { return isoString; }
+    };
+
     function ArenaNews() {
       const [view, setView] = useState('home');
       const [selectedArticle, setSelectedArticle] = useState(null);
@@ -62,14 +74,14 @@
       const [adminTab, setAdminTab] = useState('noticias');
       const [loading, setLoading] = useState(true);
 
-      // --- ESTADOS DOS DADOS SINCRONIZADOS ---
-      const [categorias, setCategorias] = useState(['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC']);
+      // --- ESTADOS DOS DADOS ---
+      const [categorias, setCategorias] = useState(CATEGORIAS_INIT);
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState(["🔴 Carregando destaques..."]);
+      const [tickerItems, setTickerItems] = useState([]);
 
-      // --- CARREGAMENTO INICIAL DO SUPABASE ---
+      // --- CARREGAMENTO GLOBAL DO SUPABASE ---
       useEffect(() => {
         const loadAllData = async () => {
           setLoading(true);
@@ -96,7 +108,6 @@
 
             const { data: ticks } = await supabase.from('tickers').select('message');
             if (ticks && ticks.length > 0) setTickerItems(ticks.map(t => t.message));
-
           } catch (err) { console.error("Erro banco:", err); }
           finally { setLoading(false); }
         };
@@ -110,34 +121,36 @@
 
       const handleSecretAccess = () => {
         if (isAdmin) { setIsAdmin(false); setView('home'); return; }
-        const pin = prompt("PIN:"); if (pin === "2026") setIsAdmin(true);
+        const pin = prompt("🔐 Acesso Restrito da Redação. Insira o PIN:");
+        if (pin === "2026") { setIsAdmin(true); alert("Sessão da Editora liberada."); }
       };
 
-      const openArticle = (article) => { setSelectedArticle(article); setView('article'); window.scrollTo(0,0); };
-      const formatDateTime = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' }) : 'Recente';
+      const openArticle = (article) => { setSelectedArticle(article); window.scrollTo({ top: 0, behavior: 'smooth' }); setView('article'); };
 
-      // --- FUNÇÕES DE RENDERIZAÇÃO APROVADAS ---
+      // --- COMPONENTES VISUAIS (IDÊNTICOS À SUA VERSÃO) ---
 
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
           <div className="max-w-[1400px] mx-auto px-4 h-20 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <button className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"><IconMenu /></button>
-              <div className="cursor-pointer select-none" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
+              <div className="cursor-pointer select-none group" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
                 <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-1">
-                  <span onDoubleClick={handleSecretAccess} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl cursor-pointer">A</span>
+                  <span onDoubleClick={handleSecretAccess} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
                   RENA<span className="font-light text-gray-300">NEWS</span>
                 </h1>
               </div>
             </div>
             <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
               {categorias.map(cat => (
-                <button key={cat} onClick={() => {setActiveCategory(cat); setView('home');}} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${activeCategory === cat ? 'bg-[#10B981] text-[#0B172A]' : 'text-gray-300 hover:text-white'}`}>{cat}</button>
+                <button key={cat} onClick={() => {setActiveCategory(cat); setView('home');}} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${activeCategory === cat ? 'bg-[#10B981] text-[#0B172A] shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>{cat}</button>
               ))}
             </nav>
-            {isAdmin && (
-              <button onClick={() => {setView(view === 'admin' ? 'home' : 'admin'); setAdminTab('noticias');}} className="bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase flex items-center gap-2 transition-all transform hover:scale-105"><IconSettings /> PAINEL GERAL</button>
-            )}
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <button onClick={() => { setView(view === 'admin' ? 'home' : 'admin'); setEditingId(null); setAdminTab('noticias'); }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap"><IconSettings /> Painel Geral</button>
+              )}
+            </div>
           </div>
         </header>
       );
@@ -145,11 +158,11 @@
       const renderTicker = () => (
         <div className="bg-[#EF4444] text-white overflow-hidden py-2 shadow-md relative z-40 border-b border-red-800">
           <div className="max-w-[1400px] mx-auto flex items-center">
-            <div className="bg-[#0B172A] text-white px-4 py-1.5 rounded-r-full text-[11px] font-black uppercase tracking-widest absolute flex items-center gap-2 border-r-2 border-[#10B981]">
-              <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse"></span> RADAR AO VIVO
+            <div className="bg-[#0B172A] text-white px-4 py-1.5 rounded-r-full text-[11px] font-black uppercase tracking-widest z-10 absolute flex items-center gap-2 shadow-lg border-r-2 border-[#10B981]">
+              <span className="w-2 h-2 rounded-full bg-[#EF4444] animate-pulse"></span> Radar Ao Vivo
             </div>
             <div className="w-full overflow-hidden ml-36">
-              <div className="animate-marquee-custom font-bold text-sm">
+              <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
                 {tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>)}
               </div>
             </div>
@@ -158,39 +171,44 @@
       );
 
       const renderHomeView = () => {
-        const filtered = activeCategory === 'Todas' ? articles : articles.filter(a => a.category === activeCategory);
-        const featured = filtered[0];
-        const rest = filtered.slice(1);
-        const tables = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
-        const matches = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
+        const filteredArticles = activeCategory === 'Todas' ? articles : articles.filter(a => a.category === activeCategory);
+        const featured = filteredArticles[0];
+        const restNews = filteredArticles.slice(1);
+        const currentTablesArray = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
+        const currentUpcoming = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
 
-        if (loading) return <div className="text-center p-20 text-gray-400 font-black animate-pulse">SINCRONIZANDO COM A REDAÇÃO...</div>;
+        if (loading) return <div className="text-center p-20 font-black text-gray-400 animate-pulse">CONECTANDO AO BANCO...</div>;
 
         return (
           <main className="max-w-[1400px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
-              {featured ? (
+              {featured && (
                 <div onClick={() => openArticle(featured)} className="group cursor-pointer relative overflow-hidden rounded-3xl shadow-2xl aspect-[16/10] md:aspect-[21/9] bg-[#0B172A] mb-10 border border-gray-200/20">
-                  <img src={featured.image} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700" />
+                  <img src={featured.image} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/70 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 w-full p-8 md:p-10">
-                    <span className="bg-[#10B981] text-[#0B172A] text-xs font-black uppercase px-3 py-1 rounded-md mb-4 inline-block shadow-lg">{featured.category}</span>
-                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 group-hover:text-[#10B981] transition-colors drop-shadow-lg">{featured.title}</h2>
-                    <p className="text-gray-300 text-lg line-clamp-2 max-w-2xl">{featured.excerpt}</p>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="bg-[#10B981] text-[#0B172A] text-xs font-black uppercase tracking-widest px-3 py-1 rounded-md shadow-lg">{featured.category}</span>
+                      <span className="glass text-white text-xs font-semibold px-3 py-1 rounded-md flex items-center gap-1"><IconClock /> {formatDateTime(featured.date)}</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg group-hover:text-[#10B981] transition-colors">{featured.title}</h2>
+                    <p className="text-gray-300 text-base md:text-lg font-medium line-clamp-2 max-w-3xl drop-shadow-md">{featured.excerpt}</p>
                   </div>
                 </div>
-              ) : <div className="text-center py-20 text-gray-300 font-bold border-2 border-dashed rounded-3xl">Portal vazio. Acesse o painel e crie a primeira notícia.</div>}
-              
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {rest.map(a => (
-                  <div key={a.id} onClick={() => openArticle(a)} className="bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 flex flex-col overflow-hidden transition-all transform hover:-translate-y-1 cursor-pointer">
-                    <img src={a.image} className="aspect-video object-cover" />
+                {restNews.map((a) => (
+                  <div key={a.id} onClick={() => openArticle(a)} className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 flex flex-col overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                    <div className="aspect-video overflow-hidden relative">
+                      <img src={a.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[#0B172A] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm">{a.category}</div>
+                    </div>
                     <div className="p-5 flex flex-col flex-1">
-                      <span className="text-[10px] font-black uppercase text-[#10B981] mb-2">{a.category}</span>
-                      <h3 className="text-xl font-bold text-[#0B172A] line-clamp-2 mb-2 group-hover:text-[#10B981] transition-colors">{a.title}</h3>
-                      <div className="mt-auto pt-4 border-t border-gray-50 text-[10px] text-gray-400 font-bold flex justify-between">
-                         <span><IconClock /> {formatDateTime(a.date)}</span>
-                         <span className="flex items-center gap-1"><IconEye /> {a.views}</span>
+                      <h3 className="text-xl font-bold text-[#0B172A] leading-snug group-hover:text-[#10B981] transition-colors mb-2 line-clamp-2">{a.title}</h3>
+                      <p className="text-sm text-gray-500 line-clamp-2 mb-4">{a.excerpt}</p>
+                      <div className="mt-auto flex items-center justify-between text-xs text-gray-400 font-semibold pt-4 border-t border-gray-50">
+                        <span className="flex items-center gap-1 truncate"><IconClock /> {formatDateTime(a.date)}</span>
+                        <span className="flex items-center gap-1"><IconEye /> {a.views || '0'}</span>
                       </div>
                     </div>
                   </div>
@@ -198,37 +216,41 @@
               </div>
             </div>
             <aside className="lg:col-span-4 flex flex-col gap-6">
-              {matches.length > 0 && (
-                <div className="bg-[#0B172A] rounded-3xl overflow-hidden shadow-lg border-t-[3px] border-[#EF4444]">
-                  <div className="bg-[#EF4444] p-4 text-white font-black text-xs uppercase flex items-center gap-2"><IconCalendar /> Próximas Transmissões</div>
+              {currentUpcoming.length > 0 && (
+                <div className="bg-[#0B172A] border border-[#0B172A] rounded-3xl overflow-hidden shadow-lg animate-fade-slide">
+                  <div className="bg-[#EF4444] p-4 flex items-center justify-between">
+                    <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2"><IconCalendar /> Próximas Transmissões</h3>
+                  </div>
                   <div className="p-4 flex flex-col gap-3">
-                    {matches.map((m, i) => (
+                    {currentUpcoming.map((jogo, i) => (
                       <div key={i} className="bg-white/10 p-3 rounded-xl border border-white/5 hover:bg-white/20 transition-colors">
-                        <span className="text-[#10B981] text-[10px] font-black block uppercase tracking-widest">{m.cup}</span>
-                        <p className="font-bold text-white text-sm">{m.match}</p>
-                        <p className="text-gray-400 text-[10px] mt-1 flex items-center gap-1"><IconClock /> {m.date}</p>
+                        <span className="text-[#10B981] text-[10px] font-black uppercase tracking-widest block mb-1">{jogo.cup}</span>
+                        <p className="font-bold text-white text-sm">{jogo.match}</p>
+                        <p className="text-gray-400 text-xs mt-1 flex items-center gap-1"><IconClock /> {jogo.date}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               )}
-              {tables.map((t) => (
-                <div key={t.id} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-lg animate-fade-slide">
-                  <div className="bg-[#0B172A] p-4 text-white font-black text-xs uppercase flex items-center gap-2 border-b-[3px] border-[#10B981]">
-                    {t.type === 'trends' ? <IconTrending /> : <IconTrophy />} {t.title}
+              {currentTablesArray.map((tableInfo, tIndex) => (
+                <div key={tableInfo.id} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-lg animate-fade-slide">
+                  <div className="bg-[#0B172A] p-4 flex items-center justify-between border-b-[3px] border-[#10B981]">
+                    <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                      {tableInfo.type === 'trends' ? <IconTrending /> : <IconTrophy />} {tableInfo.title}
+                    </h3>
                   </div>
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold">
-                      <tr><th className="px-4 py-2">Competidor</th><th className="px-4 py-2 text-right">Status</th></tr>
+                    <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
+                      <tr><th className="px-4 py-2 tracking-widest">Competidor</th><th className="px-4 py-2 text-right tracking-widest">Status</th></tr>
                     </thead>
                     <tbody>
-                      {t.data.map((row, i) => (
-                        <tr key={i} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-2">
-                            {t.type !== 'trends' && <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] ${i===0 ? 'bg-[#10B981] text-[#0B172A]' : 'bg-gray-100 text-gray-400'}`}>{i+1}</span>}
+                      {tableInfo.data.map((row, idx) => (
+                        <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                          <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
+                            {tableInfo.type !== 'trends' && <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-black ${idx === 0 ? 'bg-[#10B981] text-[#0B172A]' : 'bg-gray-100 text-gray-500'}`}>{idx + 1}</span>}
                             {row.team}
                           </td>
-                          <td className={`px-4 py-3 text-right font-black ${i===0 ? 'text-[#10B981]' : 'text-[#0B172A]'}`}>{row.stat}</td>
+                          <td className={`px-4 py-3 text-right text-xs font-black ${idx === 0 && tableInfo.type !== 'trends' ? 'text-[#10B981]' : 'text-[#0B172A]'}`}>{row.stat}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -241,197 +263,181 @@
       };
 
       const renderAdminPanel = () => {
-        const [catFilter, setCatFilter] = useState('Futebol');
-        const [post, setPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', date: new Date().toISOString().slice(0, 16) });
-        const [editId, setEditId] = useState(null);
-        const [newCatName, setNewCatName] = useState('');
+        const handleImageUpload = (e) => {
+          const file = e.target.files[0];
+          if (file) { const reader = new FileReader(); reader.onloadend = () => setNewPost({...newPost, image: reader.result}); reader.readAsDataURL(file); }
+        };
 
-        const saveArticle = async () => {
-          if(!post.title || !post.image) return alert("Título e Imagem são obrigatórios.");
+        const handleSaveArticle = async (e) => {
+          e.preventDefault();
+          if (!newPost.title || !newPost.image) return alert("Preencha o título e imagem!");
           try {
-            if(editId) {
-              await supabase.from('noticias').update(post).eq('id', editId);
-              setArticles(articles.map(a => a.id === editId ? { ...post, id: editId } : a));
+            if (editingId) {
+              await supabase.from('noticias').update(newPost).eq('id', editingId);
+              setArticles(articles.map(a => a.id === editingId ? { ...newPost, id: editingId } : a));
             } else {
               const id = Date.now().toString();
-              await supabase.from('noticias').insert([{ ...post, id, views: '0' }]);
-              setArticles([{ ...post, id, views: '0' }, ...articles]);
+              const post = { ...newPost, id, views: '0' };
+              await supabase.from('noticias').insert([post]);
+              setArticles([post, ...articles]);
             }
-            alert("Salvo com sucesso!"); setEditId(null); setPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', date: new Date().toISOString().slice(0, 16) });
-          } catch(e) { alert("Erro ao salvar."); }
+            setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); setEditingId(null); setView('home'); 
+          } catch(err) { alert("Erro ao salvar."); }
         };
 
         return (
-          <div className="max-w-[1400px] mx-auto p-6 animate-fade-slide">
-            <div className="flex flex-wrap gap-2 mb-8 bg-white p-3 rounded-2xl shadow-sm border overflow-x-auto">
+          <div className="max-w-[1400px] mx-auto px-4 py-8 animate-fade-slide">
+            <div className="flex flex-wrap gap-4 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
               {['noticias', 'tabelas', 'transmissoes', 'ticker'].map(t => (
-                <button key={t} onClick={() => setAdminTab(t)} className={`px-6 py-3 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-lg' : 'text-gray-400 hover:bg-gray-50'}`}>{t}</button>
+                <button key={t} onClick={() => setAdminTab(t)} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase text-xs ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>{t}</button>
               ))}
             </div>
 
             {adminTab === 'noticias' && (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div className="lg:col-span-8 bg-white p-8 rounded-3xl border shadow-xl">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <input className="md:col-span-2 p-4 bg-gray-50 border rounded-xl font-bold outline-none focus:border-[#10B981]" placeholder="Título da Notícia" value={post.title} onChange={e => setPost({...post, title: e.target.value})} />
-                    <select className="p-4 bg-gray-50 border rounded-xl font-bold outline-none" value={post.category} onChange={e => setPost({...post, category: e.target.value})}>
-                      {categorias.filter(c => c !== 'Todas').map(c => <option key={c}>{c}</option>)}
-                    </select>
-                    <input type="datetime-local" className="p-4 bg-gray-50 border rounded-xl outline-none" value={post.date} onChange={e => setPost({...post, date: e.target.value})} />
-                  </div>
-                  <input className="w-full p-4 bg-gray-50 border rounded-xl mb-4 outline-none" placeholder="Resumo (Lide)" value={post.excerpt} onChange={e => setPost({...post, excerpt: e.target.value})} />
-                  <textarea rows="8" className="w-full p-4 bg-gray-50 border rounded-xl mb-4 outline-none resize-none font-serif text-lg" placeholder="Texto completo da matéria..." value={post.content} onChange={e => setPost({...post, content: e.target.value})} />
-                  <div className="border-2 border-dashed p-6 rounded-xl mb-6 bg-gray-50 hover:border-[#10B981] transition-colors">
-                    <input type="file" accept="image/*" onChange={e => {
-                      const reader = new FileReader(); reader.onload = () => setPost({...post, image: reader.result}); reader.readAsDataURL(e.target.files[0]);
-                    }} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#10B981] file:text-[#0B172A] cursor-pointer" />
-                    {post.image && <img src={post.image} className="mt-4 h-40 object-cover rounded-lg shadow-md" />}
-                  </div>
-                  <button onClick={saveArticle} className="w-full bg-[#10B981] text-[#0B172A] p-4 rounded-xl font-black uppercase tracking-widest shadow-lg hover:bg-emerald-400 transition-all transform hover:-translate-y-1">SALVAR NO BANCO DE DADOS</button>
+                <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border">
+                  <form onSubmit={handleSaveArticle} className="flex flex-col gap-6">
+                    <input className="w-full bg-gray-50 border rounded-xl p-4 font-bold outline-none focus:border-[#10B981]" placeholder="Título" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
+                    <div className="grid grid-cols-2 gap-4">
+                      <select className="bg-gray-50 border rounded-xl p-4 outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                        {categorias.filter(c => c !== 'Todas').map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                      <input type="datetime-local" className="bg-gray-50 border rounded-xl p-4" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
+                    </div>
+                    <input className="w-full bg-gray-50 border rounded-xl p-4" placeholder="Resumo" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} />
+                    <textarea rows="6" className="w-full bg-gray-50 border rounded-xl p-4 outline-none" placeholder="Conteúdo" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} />
+                    <div className="p-6 border-2 border-dashed rounded-xl bg-gray-50">
+                      <input type="file" accept="image/*" onChange={handleImageUpload} />
+                      {newPost.image && <img src={newPost.image} className="mt-4 h-40 rounded-lg shadow-sm" />}
+                    </div>
+                    <button type="submit" className="bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase shadow-lg">SALVAR NO SUPABASE</button>
+                  </form>
                 </div>
-                <div className="lg:col-span-4 bg-white p-6 rounded-3xl border shadow-sm h-fit">
-                  <h3 className="font-black text-xs uppercase mb-4 text-gray-400 tracking-widest border-b pb-2">HISTÓRICO DE PUBLICAÇÕES</h3>
-                  <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
-                    {articles.map(a => (
-                      <div key={a.id} className="p-4 bg-gray-50 border rounded-xl flex flex-col gap-2 hover:border-[#10B981] transition-colors">
-                        <p className="font-bold text-sm truncate text-[#0B172A]">{a.title}</p>
-                        <div className="flex gap-2">
-                          <button onClick={() => {setPost(a); setEditId(a.id); window.scrollTo(0,0);}} className="text-blue-500 font-black text-[10px] uppercase">EDITAR</button>
-                          <button onClick={async () => {if(confirm('Apagar da nuvem permanentemente?')){ await supabase.from('noticias').delete().eq('id', a.id); setArticles(articles.filter(x => x.id !== a.id)); }}} className="text-red-500 font-black text-[10px] uppercase">APAGAR</button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <div className="lg:col-span-4 bg-white p-6 rounded-3xl shadow-xl border max-h-[600px] overflow-y-auto custom-scrollbar">
+                   <h3 className="font-black mb-4 uppercase text-xs text-gray-400">Banco de Dados</h3>
+                   {articles.map(a => (
+                     <div key={a.id} className="p-4 bg-gray-50 border rounded-xl mb-3">
+                       <p className="font-bold text-sm truncate">{a.title}</p>
+                       <div className="flex gap-2 mt-2">
+                         <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo(0,0);}} className="text-blue-500 font-bold text-xs uppercase">Editar</button>
+                         <button onClick={async () => { if(confirm('Apagar?')) { await supabase.from('noticias').delete().eq('id', a.id); setArticles(articles.filter(x => x.id !== a.id)); } }} className="text-red-500 font-bold text-xs uppercase">Apagar</button>
+                       </div>
+                     </div>
+                   ))}
                 </div>
               </div>
             )}
 
             {adminTab === 'tabelas' && (
-              <div className="bg-white p-8 rounded-3xl border shadow-xl max-w-4xl mx-auto">
-                <div className="flex flex-col md:flex-row gap-4 mb-8 p-4 bg-gray-50 rounded-xl border">
-                  <div className="flex-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 block mb-1">Filtrar por Esporte</label>
-                    <select className="w-full p-3 rounded-lg font-bold outline-none border" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-                      {categorias.map(c => <option key={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-[10px] font-black uppercase text-gray-400 block mb-1">Criar Novo Esporte</label>
-                    <div className="flex gap-2">
-                      <input className="flex-1 p-3 border rounded-lg outline-none focus:border-[#10B981]" placeholder="Ex: Fórmula 1" value={newCatName} onChange={e => setNewCatName(e.target.value)} />
-                      <button onClick={async () => { if(!newCatName) return; await supabase.from('categorias').insert([{nome: newCatName}]); setCategorias([...categorias, newCatName]); setNewCatName(''); }} className="bg-[#10B981] px-4 rounded-lg text-[#0B172A]"><IconPlus /></button>
-                    </div>
-                  </div>
+              <div className="bg-white p-8 rounded-3xl shadow-xl border max-w-4xl mx-auto">
+                <div className="flex gap-4 mb-8 bg-gray-50 p-4 rounded-xl items-center">
+                  <label className="font-black text-xs uppercase text-gray-400">Filtrar:</label>
+                  <select className="flex-1 bg-white border p-3 rounded-lg font-bold" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                    {categorias.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
                 </div>
-                <div className="flex flex-col gap-8">
-                  {(dashboardTables[catFilter] || []).map((t) => (
-                    <div key={t.id} className="p-6 bg-gray-50 rounded-2xl border shadow-inner">
-                      <div className="flex justify-between mb-6 border-b pb-2">
-                        <input className="font-black text-lg bg-transparent outline-none focus:border-[#10B981] text-[#0B172A]" value={t.title} onChange={async e => {
-                          const updated = {...t, title: e.target.value};
-                          await supabase.from('tabelas_dashboard').update({title: e.target.value}).eq('id', t.id);
-                          setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].map(x => x.id === t.id ? updated : x) }));
+                {(dashboardTables[adminCategoryFilter] || []).map((table, tIndex) => (
+                  <div key={table.id} className="bg-gray-50 p-6 rounded-2xl border mb-8">
+                    <div className="flex justify-between items-center mb-4 pb-2 border-b">
+                      <input className="flex-1 bg-transparent font-black text-lg outline-none text-[#0B172A]" value={table.title} onChange={async e => {
+                        const newTitle = e.target.value;
+                        await supabase.from('tabelas_dashboard').update({ title: newTitle }).eq('id', table.id);
+                        setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].map(t => t.id === table.id ? {...t, title: newTitle} : t) }));
+                      }} />
+                      <button onClick={async () => { if(confirm('Excluir?')) { await supabase.from('tabelas_dashboard').delete().eq('id', table.id); setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].filter(t => t.id !== table.id) })); } }} className="text-red-500"><IconTrash /></button>
+                    </div>
+                    {table.data.map((row, rIndex) => (
+                      <div key={rIndex} className="flex gap-2 mb-2">
+                        <input className="flex-1 bg-white border p-2 rounded text-sm font-bold" value={row.team} onChange={async e => {
+                          const newData = [...table.data]; newData[rIndex].team = e.target.value;
+                          await supabase.from('tabelas_dashboard').update({ data: newData }).eq('id', table.id);
+                          setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].map(t => t.id === table.id ? {...t, data: newData} : t) }));
                         }} />
-                        <button className="text-red-500" onClick={async () => {if(confirm('Excluir campeonato?')){ await supabase.from('tabelas_dashboard').delete().eq('id', t.id); setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].filter(x => x.id !== t.id) })); }}}><IconTrash /></button>
+                        <input className="w-20 bg-white border p-2 rounded text-center text-sm font-bold" value={row.stat} onChange={async e => {
+                          const newData = [...table.data]; newData[rIndex].stat = e.target.value;
+                          await supabase.from('tabelas_dashboard').update({ data: newData }).eq('id', table.id);
+                          setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].map(t => t.id === table.id ? {...t, data: newData} : t) }));
+                        }} />
+                        <button onClick={async () => {
+                          const newData = table.data.filter((_, i) => i !== rIndex);
+                          await supabase.from('tabelas_dashboard').update({ data: newData }).eq('id', table.id);
+                          setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].map(t => t.id === table.id ? {...t, data: newData} : t) }));
+                        }} className="text-red-400"><IconTrash /></button>
                       </div>
-                      {t.data.map((row, ri) => (
-                        <div key={ri} className="flex gap-2 mb-2">
-                          <input className="flex-1 p-3 border rounded-lg font-bold" value={row.team} onChange={async e => {
-                            const newData = [...t.data]; newData[ri].team = e.target.value;
-                            await supabase.from('tabelas_dashboard').update({data: newData}).eq('id', t.id);
-                            setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].map(x => x.id === t.id ? {...x, data: newData} : x) }));
-                          }} />
-                          <input className="w-24 p-3 border rounded-lg text-center font-bold text-[#10B981]" value={row.stat} onChange={async e => {
-                            const newData = [...t.data]; newData[ri].stat = e.target.value;
-                            await supabase.from('tabelas_dashboard').update({data: newData}).eq('id', t.id);
-                            setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].map(x => x.id === t.id ? {...x, data: newData} : x) }));
-                          }} />
-                          <button className="text-gray-300 hover:text-red-500" onClick={async () => {
-                            const newData = t.data.filter((_, i) => i !== ri);
-                            await supabase.from('tabelas_dashboard').update({data: newData}).eq('id', t.id);
-                            setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].map(x => x.id === t.id ? {...x, data: newData} : x) }));
-                          }}><IconTrash /></button>
-                        </div>
-                      ))}
-                      <button onClick={async () => {
-                        const newData = [...t.data, {team: 'Novo', stat: '0'}];
-                        await supabase.from('tabelas_dashboard').update({data: newData}).eq('id', t.id);
-                        setDashboardTables(prev => ({ ...prev, [catFilter]: prev[catFilter].map(x => x.id === t.id ? {...x, data: newData} : x) }));
-                      }} className="w-full p-3 bg-white border border-dashed rounded-lg mt-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:border-[#10B981] hover:text-[#10B981] transition-all">+ Adicionar Competidor</button>
-                    </div>
-                  ))}
-                  <button onClick={async () => {
-                    const nova = { category: catFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: 'Equipe', stat: '0' }] };
-                    const { data } = await supabase.from('tabelas_dashboard').insert([nova]).select();
-                    if(data) setDashboardTables(prev => ({ ...prev, [catFilter]: [...(prev[catFilter] || []), data[0]] }));
-                  }} className="bg-[#0B172A] text-white p-5 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl transform transition-all hover:scale-105">+ CRIAR NOVA TABELA NESTA CATEGORIA</button>
-                </div>
+                    ))}
+                    <button onClick={async () => {
+                      const newData = [...table.data, { team: '', stat: '' }];
+                      await supabase.from('tabelas_dashboard').update({ data: newData }).eq('id', table.id);
+                      setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: prev[adminCategoryFilter].map(t => t.id === table.id ? {...t, data: newData} : t) }));
+                    }} className="w-full mt-2 bg-gray-200 p-2 rounded font-black text-[10px] uppercase">+ Linha</button>
+                  </div>
+                ))}
+                <button onClick={async () => {
+                  const nova = { category: adminCategoryFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: 'Time', stat: '0' }] };
+                  const { data } = await supabase.from('tabelas_dashboard').insert([nova]).select();
+                  if(data) setDashboardTables(prev => ({ ...prev, [adminCategoryFilter]: [...(prev[adminCategoryFilter] || []), data[0]] }));
+                }} className="w-full bg-[#0B172A] text-white p-4 rounded-xl font-bold uppercase text-xs">+ CRIAR NOVO CAMPEONATO</button>
               </div>
             )}
 
             {adminTab === 'transmissoes' && (
-              <div className="bg-white p-8 rounded-3xl border shadow-xl max-w-4xl mx-auto">
-                 <select className="w-full p-4 mb-6 bg-gray-50 border rounded-xl font-bold outline-none" value={catFilter} onChange={e => setCatFilter(e.target.value)}>
-                  {categorias.map(c => <option key={c}>{c}</option>)}
-                </select>
-                <div className="bg-gray-50 p-6 rounded-2xl border shadow-inner">
-                  {(upcomingMatches[catFilter] || []).map((m, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-3 mb-3 bg-white p-3 border rounded-xl shadow-sm items-center">
-                      <input className="col-span-4 p-2 border rounded-lg text-sm font-bold" value={m.match} onChange={async e => {
-                        const newList = [...upcomingMatches[catFilter]]; newList[i].match = e.target.value;
-                        await supabase.from('transmissoes').delete().eq('category', catFilter);
-                        await supabase.from('transmissoes').insert(newList.map(x => ({...x, category: catFilter})));
-                        setUpcomingMatches({...upcomingMatches, [catFilter]: newList});
-                      }} />
-                      <input className="col-span-4 p-2 border rounded-lg text-sm" value={m.cup} onChange={async e => {
-                        const newList = [...upcomingMatches[catFilter]]; newList[i].cup = e.target.value;
-                        await supabase.from('transmissoes').delete().eq('category', catFilter);
-                        await supabase.from('transmissoes').insert(newList.map(x => ({...x, category: catFilter})));
-                        setUpcomingMatches({...upcomingMatches, [catFilter]: newList});
-                      }} />
-                      <input className="col-span-3 p-2 border rounded-lg text-xs" value={m.date} onChange={async e => {
-                        const newList = [...upcomingMatches[catFilter]]; newList[i].date = e.target.value;
-                        await supabase.from('transmissoes').delete().eq('category', catFilter);
-                        await supabase.from('transmissoes').insert(newList.map(x => ({...x, category: catFilter})));
-                        setUpcomingMatches({...upcomingMatches, [catFilter]: newList});
-                      }} />
-                      <button className="col-span-1 text-red-400 hover:text-red-600" onClick={async () => {
-                        const newList = upcomingMatches[catFilter].filter((_, idx) => idx !== i);
-                        await supabase.from('transmissoes').delete().eq('category', catFilter);
-                        if(newList.length > 0) await supabase.from('transmissoes').insert(newList.map(x => ({...x, category: catFilter})));
-                        setUpcomingMatches({...upcomingMatches, [catFilter]: newList});
-                      }}><IconTrash /></button>
-                    </div>
-                  ))}
-                  <button onClick={async () => {
-                    const newItem = { match: 'Time A x Time B', cup: 'Campeonato', date: 'Hoje, 20:00' };
-                    const newList = [...(upcomingMatches[catFilter] || []), newItem];
-                    await supabase.from('transmissoes').delete().eq('category', catFilter);
-                    await supabase.from('transmissoes').insert(newList.map(x => ({...x, category: catFilter})));
-                    setUpcomingMatches({...upcomingMatches, [catFilter]: newList});
-                  }} className="w-full bg-[#10B981] p-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-md hover:bg-emerald-400 mt-4">+ ADICIONAR NOVA TRANSMISSÃO</button>
-                </div>
+              <div className="bg-white p-8 rounded-3xl shadow-xl border max-w-4xl mx-auto">
+                <select className="w-full bg-gray-50 border p-4 rounded-xl font-bold mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>{categorias.map(c => <option key={c} value={c}>{c}</option>)}</select>
+                {(upcomingMatches[adminCategoryFilter] || []).map((m, i) => (
+                  <div key={i} className="flex flex-col md:flex-row gap-3 mb-4 bg-gray-50 p-4 rounded-xl border items-center">
+                    <input className="flex-1 bg-white border p-2 rounded font-bold" value={m.match} onChange={async e => {
+                      const list = [...upcomingMatches[adminCategoryFilter]]; list[i].match = e.target.value;
+                      await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
+                      await supabase.from('transmissoes').insert(list.map(x => ({...x, category: adminCategoryFilter})));
+                      setUpcomingMatches({...upcomingMatches, [adminCategoryFilter]: list});
+                    }} />
+                    <input className="w-1/4 bg-white border p-2 rounded font-bold" value={m.cup} onChange={async e => {
+                      const list = [...upcomingMatches[adminCategoryFilter]]; list[i].cup = e.target.value;
+                      await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
+                      await supabase.from('transmissoes').insert(list.map(x => ({...x, category: adminCategoryFilter})));
+                      setUpcomingMatches({...upcomingMatches, [adminCategoryFilter]: list});
+                    }} />
+                    <input className="w-1/4 bg-white border p-2 rounded font-bold" value={m.date} onChange={async e => {
+                      const list = [...upcomingMatches[adminCategoryFilter]]; list[i].date = e.target.value;
+                      await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
+                      await supabase.from('transmissoes').insert(list.map(x => ({...x, category: adminCategoryFilter})));
+                      setUpcomingMatches({...upcomingMatches, [adminCategoryFilter]: list});
+                    }} />
+                    <button onClick={async () => {
+                      const list = upcomingMatches[adminCategoryFilter].filter((_, idx) => idx !== i);
+                      await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
+                      if(list.length > 0) await supabase.from('transmissoes').insert(list.map(x => ({...x, category: adminCategoryFilter})));
+                      setUpcomingMatches({...upcomingMatches, [adminCategoryFilter]: list});
+                    }}><IconTrash /></button>
+                  </div>
+                ))}
+                <button onClick={async () => {
+                  const nova = { match: 'Time A x Time B', cup: 'Liga', date: 'Hoje' };
+                  const list = [...(upcomingMatches[adminCategoryFilter] || []), nova];
+                  await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
+                  await supabase.from('transmissoes').insert(list.map(x => ({...x, category: adminCategoryFilter})));
+                  setUpcomingMatches({...upcomingMatches, [adminCategoryFilter]: list});
+                }} className="w-full bg-[#10B981] p-4 rounded-xl font-black text-xs uppercase">+ ADICIONAR JOGO</button>
               </div>
             )}
 
             {adminTab === 'ticker' && (
-              <div className="bg-white p-8 rounded-3xl border shadow-xl max-w-3xl mx-auto">
-                 <div className="flex flex-col gap-4">
-                   {tickerItems.map((item, i) => (
-                     <div key={i} className="flex gap-2">
-                       <input className="flex-1 p-4 border rounded-xl font-bold bg-gray-50 focus:border-[#EF4444] outline-none" value={item} onChange={e => {
-                         const copy = [...tickerItems]; copy[i] = e.target.value; setTickerItems(copy);
-                       }} />
-                       <button className="bg-red-50 text-red-500 px-4 rounded-xl" onClick={() => setTickerItems(tickerItems.filter((_, idx) => idx !== i))}><IconTrash /></button>
-                     </div>
-                   ))}
-                   <button onClick={() => setTickerItems([...tickerItems, "Nova notícia urgente..."])} className="p-4 bg-gray-100 rounded-xl font-black text-[10px] uppercase tracking-widest text-gray-500">+ ADICIONAR FRASE AO GIRO</button>
-                   <button onClick={async () => {
-                     await supabase.from('tickers').delete().neq('message', '!!!');
-                     await supabase.from('tickers').insert(tickerItems.map(m => ({ message: m })));
-                     alert("Radar Ao Vivo Atualizado!");
-                   }} className="bg-[#EF4444] text-white p-5 rounded-2xl font-black uppercase tracking-widest shadow-xl transform transition-all hover:scale-105">SALVAR E COLOCAR NO AR</button>
-                 </div>
+              <div className="bg-white p-8 rounded-3xl shadow-xl border max-w-2xl mx-auto">
+                <h2 className="font-black mb-6 uppercase text-sm">Giro Ao Vivo</h2>
+                {tickerItems.map((item, i) => (
+                  <div key={i} className="flex gap-2 mb-2">
+                    <input className="flex-1 border p-3 rounded-xl font-bold bg-gray-50" value={item} onChange={e => {
+                      const copy = [...tickerItems]; copy[i] = e.target.value; setTickerItems(copy);
+                    }} />
+                    <button onClick={() => setTickerItems(tickerItems.filter((_, idx) => idx !== i))}><IconTrash /></button>
+                  </div>
+                ))}
+                <button onClick={() => setTickerItems([...tickerItems, "Nova notícia..."])} className="w-full bg-gray-100 p-3 rounded-xl mb-4 text-xs font-bold">+ FRASE</button>
+                <button onClick={async () => {
+                   await supabase.from('tickers').delete().neq('message', '!!!');
+                   await supabase.from('tickers').insert(tickerItems.map(m => ({ message: m })));
+                   alert("Giro atualizado!");
+                }} className="w-full bg-[#10B981] p-4 rounded-xl font-black shadow-lg">SALVAR NA NUVEM</button>
               </div>
             )}
           </div>
@@ -441,22 +447,19 @@
       const renderArticleView = () => {
         if (!selectedArticle) return null;
         return (
-          <article className="max-w-[850px] mx-auto px-4 py-12 animate-fade-slide">
-            <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-400 font-bold text-xs uppercase mb-8 hover:text-[#0B172A] transition-colors bg-white px-4 py-2 rounded-full border shadow-sm"><IconChevronLeft /> Voltar ao Portal</button>
-            <div className="flex items-center gap-3 mb-6">
-              <span className="bg-[#10B981] text-[#0B172A] font-black uppercase text-[10px] px-3 py-1 rounded shadow-sm">{selectedArticle.category}</span>
-              <span className="text-gray-400 text-xs font-bold border-l pl-3"><IconClock /> {formatDateTime(selectedArticle.date)}</span>
-            </div>
-            <h1 className="text-4xl md:text-6xl font-black text-[#0B172A] mb-8 leading-tight tracking-tight">{selectedArticle.title}</h1>
-            <p className="text-2xl text-gray-500 font-medium mb-12 border-l-4 border-[#10B981] pl-8 leading-relaxed italic">{selectedArticle.excerpt}</p>
-            <img src={selectedArticle.image} className="w-full rounded-[40px] shadow-2xl mb-12 aspect-[21/9] object-cover border-4 border-white" />
-            <div className="text-xl text-gray-800 leading-relaxed font-serif whitespace-pre-wrap space-y-6">{selectedArticle.content}</div>
+          <article className="max-w-[800px] mx-auto px-4 py-12 animate-fade-slide">
+            <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-500 font-bold text-xs uppercase mb-8 hover:text-[#0B172A]"><IconChevronLeft /> Voltar</button>
+            <span className="bg-[#10B981] text-[#0B172A] font-black uppercase text-[10px] px-2 py-1 rounded mb-4 inline-block">{selectedArticle.category}</span>
+            <h1 className="text-4xl md:text-5xl font-black text-[#0B172A] mb-6 leading-tight tracking-tight">{selectedArticle.title}</h1>
+            <p className="text-xl text-gray-500 font-medium mb-8 border-l-4 border-[#10B981] pl-6 leading-relaxed italic">{selectedArticle.excerpt}</p>
+            <img src={selectedArticle.image} className="w-full rounded-3xl shadow-xl mb-10 aspect-video object-cover" />
+            <div className="text-lg text-gray-800 leading-loose font-serif whitespace-pre-wrap">{selectedArticle.content}</div>
           </article>
         );
       };
 
       return (
-        <div className="min-h-screen pb-20">
+        <div className="min-h-screen">
           {renderHeader()}
           {renderTicker()}
           {view === 'home' && renderHomeView()}
