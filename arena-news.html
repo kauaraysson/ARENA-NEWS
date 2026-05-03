@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arena News - Portal Esportivo Premium</title>
+  
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23EF4444'/><text x='50' y='75' font-family='Arial' font-size='75' font-weight='bold' fill='white' text-anchor='middle'>A</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+  
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+    @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
+    .animate-marquee-custom { display: inline-block; white-space: nowrap; animation: marquee 30s linear infinite; }
+    @keyframes spinLogo { 0%, 80% { transform: rotate(-3deg); } 100% { transform: rotate(357deg); } }
+    .animate-spin-logo { display: inline-block; animation: spinLogo 5s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #10B981; border-radius: 4px; }
+    .glass { background: rgba(11, 23, 42, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-slide { animation: fadeSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+  </style>
+
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="selection:bg-[#EF4444] selection:text-white">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const CHAVE_API_SPORTS = ""; 
+
+    // ÍCONES
+    const IconTrophy = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>;
+    const IconActivity = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>;
+    const IconMenu = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>;
+    const IconSettings = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>;
+    const IconChevronLeft = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>;
+    const IconTrash = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
+    const IconEdit = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>;
+    const IconEye = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>;
+    const IconShare = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>;
+    const IconTrending = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>;
+    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
+    const IconClock = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>;
+    const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
+    const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
+
+    // DADOS INICIAIS
+    const MOCK_TABLES_INIT = {
+      'Todas': [ { title: 'Assuntos do Momento', type: 'trends', data: [{ team: 'Ouro no Skate', stat: '🔥 Em alta' }, { team: 'Final da Champions', stat: '⚽ Fervendo' }] } ],
+      'Futebol': [
+        { title: 'Brasileirão Série A (Masc)', type: 'points', data: [{ team: 'Flamengo', stat: '45' }, { team: 'Palmeiras', stat: '42' }, { team: 'Botafogo', stat: '40' }] },
+        { title: 'Brasileirão Série A (Fem)', type: 'points', data: [{ team: 'Corinthians', stat: '39' }, { team: 'Ferroviária', stat: '36' }] }
+      ],
+      'Vôlei': [ { title: 'Superliga (Masc)', type: 'points', data: [{ team: 'Sada Cruzeiro', stat: '30' }, { team: 'Minas T.C.', stat: '28' }] } ],
+      'Skate': [ { title: 'Ranking Mundial (Fem)', type: 'rank', data: [{ team: 'Rayssa Leal (BRA)', stat: '1º' }, { team: 'M. Nishiya (JPN)', stat: '2º' }] } ],
+      'UFC': [ { title: 'Ranking Peso-Leve (Masc)', type: 'rank', data: [{ team: 'I. Makhachev', stat: 'C' }, { team: 'C. Oliveira', stat: '1º' }] } ],
+      'Tênis de Mesa': [ { title: 'Ranking Mundial (Masc)', type: 'rank', data: [{ team: 'Fan Zhendong', stat: '1º' }, { team: 'Hugo Calderano', stat: '5º' }] } ]
+    };
+
+    const MOCK_UPCOMING_INIT = {
+      'Todas': [{ match: 'Flamengo x Palmeiras', date: 'Hoje, 21:30', cup: 'Brasileirão' }],
+      'Futebol': [{ match: 'Flamengo x Palmeiras', date: 'Hoje, 21:30', cup: 'Brasileirão' }, { match: 'Real Madrid x City', date: 'Amanhã, 16:00', cup: 'Champions' }],
+      'Vôlei': [{ match: 'Sada Cruzeiro x Minas', date: 'Sex, 19:00', cup: 'Superliga' }],
+      'Skate': [{ match: 'SLS Super Crown Finais', date: 'Dom, 14:00', cup: 'Street League' }],
+      'UFC': [{ match: 'Pantoja x Erceg', date: 'Sáb, 23:00', cup: 'UFC 301' }],
+      'Tênis de Mesa': [{ match: 'Hugo Calderano x Ma Long', date: 'Qua, 09:00', cup: 'WTT Champions' }]
+    };
+
+    const MOCK_TICKER_INIT = [
+      "🔴 Corinthians dispara no Brasileirão Feminino",
+      "🛹 CBSk anuncia circuito nacional de skate",
+      "🥊 Amanda Lemos confirmada no card principal",
+      "🏐 Zé Roberto anuncia convocação final"
+    ];
+
+    const INITIAL_ARTICLES = [
+      { id: '1', title: 'Skate Street: Rayssa Leal domina a pista e leva o ouro inédito', category: 'Skate', excerpt: 'A brasileira superou as japonesas e garantiu o lugar mais alto do pódio.', content: 'Foi uma final de tirar o fôlego...', image: 'https://images.unsplash.com/photo-1564982752979-3f7bc974d29a?auto=format&fit=crop&q=80&w=1000', views: '12.4k', date: '2026-05-03T10:15', linkedArticleId: '' },
+      { id: '2', title: 'Champions League: Real Madrid e City fazem duelo histórico', category: 'Futebol', excerpt: 'Em jogo de 6 gols, as equipes mostram por que são as favoritas ao título.', content: 'O jogo foi marcado por viradas...', image: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=600', views: '28.1k', date: '2026-05-02T23:40', linkedArticleId: '' }
+    ];
+
+    const CATEGORIAS = ['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC'];
+
+    const formatDateTime = (isoString) => {
+      if (!isoString) return 'Data não definida';
+      try {
+        const dateObj = new Date(isoString);
+        return dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+      } catch (e) { return isoString; }
+    };
+
+    function ArenaNews() {
+      const [view, setView] = useState('home');
+      const [selectedArticle, setSelectedArticle] = useState(null);
+      const [activeCategory, setActiveCategory] = useState('Todas');
+      
+      const [isAdmin, setIsAdmin] = useState(false);
+      const [adminTab, setAdminTab] = useState('noticias');
+
+      // CMS PERSISTENTE
+      const [articles, setArticles] = useState(() => { const s = localStorage.getItem('an_db'); return s ? JSON.parse(s) : INITIAL_ARTICLES; });
+      const [dashboardTables, setDashboardTables] = useState(() => { const s = localStorage.getItem('an_tables'); return s ? JSON.parse(s) : MOCK_TABLES_INIT; });
+      const [upcomingMatches, setUpcomingMatches] = useState(() => { const s = localStorage.getItem('an_upcoming'); return s ? JSON.parse(s) : MOCK_UPCOMING_INIT; });
+      const [tickerItems, setTickerItems] = useState(() => { const s = localStorage.getItem('an_ticker'); return s ? JSON.parse(s) : MOCK_TICKER_INIT; });
+
+      useEffect(() => { localStorage.setItem('an_db', JSON.stringify(articles)); }, [articles]);
+      useEffect(() => { localStorage.setItem('an_tables', JSON.stringify(dashboardTables)); }, [dashboardTables]);
+      useEffect(() => { localStorage.setItem('an_upcoming', JSON.stringify(upcomingMatches)); }, [upcomingMatches]);
+      useEffect(() => { localStorage.setItem('an_ticker', JSON.stringify(tickerItems)); }, [tickerItems]);
+
+      const getNowLocalISO = () => new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16);
+      const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
+      const [editingId, setEditingId] = useState(null);
+      const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol'); 
+
+      const handleSecretAccess = () => {
+        if (isAdmin) { setIsAdmin(false); setView('home'); return; }
+        const pin = prompt("🔐 Acesso Restrito da Redação. Insira o PIN:");
+        if (pin === "2026") { setIsAdmin(true); alert("Sessão da Editora liberada. Você tem controle total do painel."); }
+      };
+
+      const openArticle = (article) => {
+        setSelectedArticle(article);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setView('article');
+      };
+
+      const filteredArticles = activeCategory === 'Todas' ? articles : articles.filter(a => a.category === activeCategory);
+
+      // --- COMPONENTES VISUAIS PRINCIPAIS ---
+
+      const renderHeader = () => (
+        <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
+          <div className="max-w-[1400px] mx-auto px-4 h-20 flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <button className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"><IconMenu /></button>
+              <div className="cursor-pointer select-none group" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
+                <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-1">
+                  <span onDoubleClick={handleSecretAccess} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
+                  RENA<span className="font-light text-gray-300">NEWS</span>
+                </h1>
+              </div>
+            </div>
+
+            <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
+              {CATEGORIAS.map(cat => (
+                <button key={cat} onClick={() => {setActiveCategory(cat); setView('home');}} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${activeCategory === cat ? 'bg-[#10B981] text-[#0B172A] shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>
+                  {cat}
+                </button>
+              ))}
+            </nav>
+
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <button onClick={() => { setView(view === 'admin' ? 'home' : 'admin'); setEditingId(null); setAdminTab('noticias'); }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
+                  <IconSettings /> Painel Geral
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+      );
+
+      const renderTicker = () => (
+        <div className="bg-[#EF4444] text-white overflow-hidden py-2 shadow-md relative z-40 border-b border-red-800">
+          <div className="max-w-[1400px] mx-auto flex items-center">
+            <div className="bg-[#0B172A] text-white px-4 py-1.5 rounded-r-full text-[11px] font-black uppercase tracking-widest z-10 absolute flex items-center gap-2 shadow-lg border-r-2 border-[#10B981]">
+              <span className="w-2 h-2 rounded-full bg-[#10B981] animate-ping absolute -top-1 -right-1"></span>
+              <span className="w-2 h-2 rounded-full bg-[#10B981]"></span> Radar Ao Vivo
+            </div>
+            <div className="w-full overflow-hidden ml-36">
+              <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
+                {tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+
+      const renderHomeView = () => {
+        const featured = filteredArticles[0];
+        const restNews = filteredArticles.slice(1);
+        
+        const currentTablesArray = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
+        const currentUpcoming = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
+
+        return (
+          <main className="max-w-[1400px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div className="lg:col-span-8">
+              {filteredArticles.length === 0 && (
+                <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm">
+                  <IconActivity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-400">Nenhuma notícia publicada.</h2>
+                </div>
+              )}
+
+              {featured && (
+                <div onClick={() => openArticle(featured)} className="group cursor-pointer relative overflow-hidden rounded-3xl shadow-2xl aspect-[16/10] md:aspect-[21/9] bg-[#0B172A] mb-10 border border-gray-200/20">
+                  <img src={featured.image} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/70 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 w-full p-8 md:p-10">
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="bg-[#10B981] text-[#0B172A] text-xs font-black uppercase tracking-widest px-3 py-1 rounded-md shadow-lg">{featured.category}</span>
+                      <span className="glass text-white text-xs font-semibold px-3 py-1 rounded-md flex items-center gap-1"><IconClock /> {formatDateTime(featured.date)}</span>
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight mb-4 drop-shadow-lg group-hover:text-[#10B981] transition-colors">{featured.title}</h2>
+                    <p className="text-gray-300 text-base md:text-lg font-medium line-clamp-2 max-w-3xl drop-shadow-md">{featured.excerpt}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {restNews.map((a) => (
+                  <div key={a.id} onClick={() => openArticle(a)} className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 flex flex-col overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
+                    <div className="aspect-video overflow-hidden relative">
+                      <img src={a.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[#0B172A] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm">{a.category}</div>
+                    </div>
+                    <div className="p-5 flex flex-col flex-1">
+                      <h3 className="text-xl font-bold text-[#0B172A] leading-snug group-hover:text-[#10B981] transition-colors mb-2 line-clamp-2">{a.title}</h3>
+                      <p className="text-sm text-gray-500 line-clamp-2 mb-4">{a.excerpt}</p>
+                      <div className="mt-auto flex items-center justify-between text-xs text-gray-400 font-semibold pt-4 border-t border-gray-50">
+                        <span className="flex items-center gap-1 truncate"><IconClock /> {formatDateTime(a.date)}</span>
+                        <span className="flex items-center gap-1"><IconEye /> {a.views || '0'}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <aside className="lg:col-span-4 flex flex-col gap-6">
+              {currentUpcoming.length > 0 && (
+                <div className="bg-[#0B172A] border border-[#0B172A] rounded-3xl overflow-hidden shadow-lg animate-fade-slide">
+                  <div className="bg-[#EF4444] p-4 flex items-center justify-between">
+                    <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2"><IconCalendar /> Próximas Transmissões</h3>
+                  </div>
+                  <div className="p-4 flex flex-col gap-3">
+                    {currentUpcoming.map((jogo, i) => (
+                      <div key={i} className="bg-white/10 p-3 rounded-xl border border-white/5 hover:bg-white/20 transition-colors">
+                        <span className="text-[#10B981] text-[10px] font-black uppercase tracking-widest block mb-1">{jogo.cup}</span>
+                        <p className="font-bold text-white text-sm">{jogo.match}</p>
+                        <p className="text-gray-400 text-xs mt-1 flex items-center gap-1"><IconClock /> {jogo.date}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {currentTablesArray.map((tableInfo, tIndex) => (
+                <div key={`${activeCategory}-${tIndex}`} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-lg animate-fade-slide" style={{ animationDelay: `${tIndex * 0.1}s` }}>
+                  <div className="bg-[#0B172A] p-4 flex items-center justify-between border-b-[3px] border-[#10B981]">
+                    <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                      {tableInfo.type === 'trends' ? <IconTrending /> : <IconTrophy />} {tableInfo.title}
+                    </h3>
+                  </div>
+                  <div className="p-0">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
+                        <tr>
+                          <th className="px-4 py-2 tracking-widest">{tableInfo.type === 'trends' ? 'Tópico' : 'Competidor'}</th>
+                          <th className="px-4 py-2 text-right tracking-widest">{tableInfo.type === 'points' ? 'Pts' : (tableInfo.type === 'rank' ? 'Pos' : 'Status')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tableInfo.data.map((row, idx) => (
+                          <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                            <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
+                              {tableInfo.type !== 'trends' && (
+                                <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-black transition-colors ${idx === 0 ? 'bg-[#10B981] text-[#0B172A] shadow-md transform scale-110' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'}`}>
+                                  {idx + 1}
+                                </span>
+                              )}
+                              {row.team}
+                            </td>
+                            <td className={`px-4 py-3 text-right text-xs font-black ${idx === 0 && tableInfo.type !== 'trends' ? 'text-[#10B981]' : 'text-[#0B172A]'}`}>{row.stat}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </aside>
+          </main>
+        );
+      };
+
+      const renderArticleView = () => {
+        if (!selectedArticle) return null;
+        const linkedNews = selectedArticle.linkedArticleId ? articles.find(a => a.id === selectedArticle.linkedArticleId) : null;
+
+        return (
+          <article className="max-w-[800px] mx-auto px-4 py-12 animate-fade-slide">
+            <button onClick={() => setView('home')} className="flex items-center gap-2 text-gray-500 hover:text-[#0B172A] mb-8 font-bold text-xs uppercase tracking-widest bg-white border border-gray-200 px-4 py-2 rounded-full w-fit hover:shadow-md transition-all">
+              <IconChevronLeft /> Voltar ao Portal
+            </button>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="bg-[#10B981] text-[#0B172A] font-black uppercase tracking-widest text-xs px-3 py-1 rounded-md">{selectedArticle.category}</span>
+              <span className="text-gray-400 text-sm font-medium flex items-center gap-1 border-r border-gray-300 pr-3"><IconClock /> {formatDateTime(selectedArticle.date)}</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-[#0B172A] leading-[1.1] mb-6 tracking-tight">{selectedArticle.title}</h1>
+            <p className="text-xl text-gray-500 font-medium mb-8 border-l-[3px] border-[#10B981] pl-5 leading-relaxed">{selectedArticle.excerpt}</p>
+            <div className="relative mb-12">
+              <img src={selectedArticle.image} className="w-full aspect-[21/9] object-cover rounded-3xl shadow-xl" />
+            </div>
+            {linkedNews && (
+              <div onClick={() => openArticle(linkedNews)} className="bg-emerald-50 border border-[#10B981]/30 rounded-2xl p-6 mb-10 cursor-pointer hover:bg-emerald-100 transition-colors group shadow-sm">
+                <div className="flex items-center gap-2 text-[#10B981] font-black uppercase text-xs tracking-widest mb-3">
+                  <IconLink /> Notícias anteriores:
+                </div>
+                <h4 className="text-[#0B172A] font-bold text-xl group-hover:text-[#10B981] transition-colors mb-2">{linkedNews.title}</h4>
+              </div>
+            )}
+            <div className="text-lg max-w-none text-gray-800 leading-loose font-serif whitespace-pre-wrap"><p>{selectedArticle.content}</p></div>
+          </article>
+        );
+      };
+
+      const renderAdminPanel = () => {
+        // --- FUNÇÕES DE NOTÍCIAS ---
+        const handleImageUpload = (e) => {
+          const file = e.target.files[0];
+          if (file) { const reader = new FileReader(); reader.onloadend = () => setNewPost({...newPost, image: reader.result}); reader.readAsDataURL(file); }
+        };
+        const handleSaveArticle = (e) => {
+          e.preventDefault();
+          if (!newPost.title || !newPost.excerpt || !newPost.content || !newPost.image) return alert("Preencha tudo!");
+          if (editingId) {
+            setArticles(articles.map(a => a.id === editingId ? { ...newPost, id: editingId, views: a.views } : a));
+            alert("Matéria atualizada!");
+          } else {
+            setArticles([{ id: Date.now().toString(), ...newPost, views: '0' }, ...articles]);
+            alert("Manchete lançada!");
+          }
+          setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); setEditingId(null); setView('home'); 
+        };
+
+        // --- FUNÇÕES DE TABELAS (Agora Criam e Excluem Tabelas Inteiras!) ---
+        const handleAddTable = () => {
+          const updated = { ...dashboardTables };
+          if (!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
+          updated[adminCategoryFilter].push({
+            title: 'Novo Campeonato',
+            type: 'points',
+            data: [{ team: '', stat: '' }]
+          });
+          setDashboardTables(updated);
+        };
+
+        const handleRemoveTable = (tIndex) => {
+          if(confirm('Tem certeza que deseja excluir este campeonato inteiro?')) {
+            const updated = { ...dashboardTables };
+            updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== tIndex);
+            setDashboardTables(updated);
+          }
+        };
+
+        const handleUpdateTableData = (tableIndex, rowIndex, field, value) => {
+          const updated = { ...dashboardTables };
+          if(!updated[adminCategoryFilter]) return;
+          updated[adminCategoryFilter][tableIndex].data[rowIndex][field] = value;
+          setDashboardTables(updated);
+        };
+        const handleUpdateTableTitle = (tableIndex, value) => {
+          const updated = { ...dashboardTables };
+          if(!updated[adminCategoryFilter]) return;
+          updated[adminCategoryFilter][tableIndex].title = value;
+          setDashboardTables(updated);
+        };
+        const handleAddTableRow = (tableIndex) => {
+          const updated = { ...dashboardTables };
+          if(!updated[adminCategoryFilter]) return;
+          updated[adminCategoryFilter][tableIndex].data.push({ team: '', stat: '' });
+          setDashboardTables(updated);
+        };
+        const handleRemoveTableRow = (tableIndex, rowIndex) => {
+          const updated = { ...dashboardTables };
+          if(!updated[adminCategoryFilter]) return;
+          updated[adminCategoryFilter][tableIndex].data = updated[adminCategoryFilter][tableIndex].data.filter((_, i) => i !== rowIndex);
+          setDashboardTables(updated);
+        };
+
+        // --- FUNÇÕES DO TICKER E TRANSMISSÕES ---
+        const handleUpdateTicker = (index, value) => { const updated = [...tickerItems]; updated[index] = value; setTickerItems(updated); };
+        const handleAddTicker = () => setTickerItems([...tickerItems, "Novo destaque..."]);
+        const handleRemoveTicker = (index) => setTickerItems(tickerItems.filter((_, i) => i !== index));
+
+        const handleUpdateUpcoming = (index, field, value) => {
+          const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
+          updated[adminCategoryFilter][index][field] = value; setUpcomingMatches(updated);
+        };
+        const handleAddUpcoming = () => {
+          const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
+          updated[adminCategoryFilter].push({ cup: 'Competição', match: 'Time A x Time B', date: 'Data, Hora' }); setUpcomingMatches(updated);
+        };
+        const handleRemoveUpcoming = (index) => {
+          const updated = { ...upcomingMatches }; updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== index); setUpcomingMatches(updated);
+        };
+
+        return (
+          <div className="max-w-[1400px] mx-auto px-4 py-8 animate-fade-slide">
+            
+            <div className="flex flex-wrap gap-4 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+              <button onClick={() => setAdminTab('noticias')} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors ${adminTab === 'noticias' ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Notícias</button>
+              <button onClick={() => setAdminTab('tabelas')} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors ${adminTab === 'tabelas' ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Tabelas</button>
+              <button onClick={() => setAdminTab('transmissoes')} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors ${adminTab === 'transmissoes' ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Transmissões</button>
+              <button onClick={() => setAdminTab('ticker')} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-colors ${adminTab === 'ticker' ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>Giro (Topo)</button>
+            </div>
+
+            {adminTab === 'noticias' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
+                  <form onSubmit={handleSaveArticle} className="flex flex-col gap-6">
+                    <div>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manchete (Título)</label>
+                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold mt-2 outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} required/>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Assunto:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold mt-2 outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                          {CATEGORIAS.filter(c => c !== 'Todas').map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconClock /> Data/Hora:</label>
+                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} required/>
+                      </div>
+                      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconLink /> Notícia Anterior:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
+                          <option value="">Não vincular</option>
+                          {articles.filter(a => a.id !== editingId).map(a => <option key={a.id} value={a.id}>{a.title.substring(0, 25)}...</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300">
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-3">Foto da Matéria</label>
+                      <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
+                      {newPost.image && <img src={newPost.image} className="mt-4 h-40 object-cover rounded-lg shadow-md border border-gray-200"/>}
+                    </div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lide</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 outline-none" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} required/></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Texto</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 mt-2 outline-none resize-none font-serif text-lg" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} required/></div>
+                    <div className="flex gap-4">
+                      <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg">{editingId ? 'Salvar Correção' : 'Postar Matéria'}</button>
+                      {editingId && <button type="button" onClick={() => {setEditingId(null); setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() })}} className="bg-gray-100 text-gray-600 font-bold py-4 px-8 rounded-xl uppercase">Cancelar</button>}
+                    </div>
+                  </form>
+                </div>
+                <div className="lg:col-span-4 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 h-fit">
+                  <h3 className="font-black text-[#0B172A] mb-4 uppercase text-sm tracking-wider">Histórico</h3>
+                  <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                    {articles.map(a => (
+                      <div key={a.id} className="bg-gray-50 p-4 rounded-2xl flex flex-col border border-gray-100">
+                        <div className="mb-2"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{a.category}</span><p className="text-sm font-bold text-[#0B172A] line-clamp-2 mt-1">{a.title}</p></div>
+                        <div className="flex justify-end gap-2 border-t border-gray-200 pt-2">
+                          <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 p-2 rounded-xl text-xs font-bold">Editar</button>
+                          <button onClick={() => {if(confirm('Excluir?')) setArticles(articles.filter(x => x.id !== a.id))}} className="text-red-500 bg-red-50 p-2 rounded-xl text-xs font-bold">Apagar</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {(adminTab === 'tabelas' || adminTab === 'transmissoes') && (
+              <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
+                 <div className="mb-6">
+                    <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">{adminTab === 'tabelas' ? 'Editor de Tabelas e Campeonatos' : 'Agenda de Transmissões'}</h2>
+                    <p className="text-sm text-gray-500 font-medium">Selecione o esporte para modificar as {adminTab === 'tabelas' ? 'tabelas laterais' : 'próximas partidas'}.</p>
+                 </div>
+                 
+                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200 flex items-center gap-4">
+                   <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Esporte / Categoria:</label>
+                   <select className="flex-1 bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none shadow-sm" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                      {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
+                   </select>
+                 </div>
+
+                 {adminTab === 'tabelas' && (
+                   <div className="grid grid-cols-1 gap-8">
+                      {(dashboardTables[adminCategoryFilter] || []).map((table, tIndex) => (
+                        <div key={tIndex} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
+                          
+                          {/* TÍTULO DA TABELA COM BOTÃO DE EXCLUIR A TABELA INTEIRA */}
+                          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                             <input className="flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome do Campeonato" />
+                             <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Campeonato Inteiro"><IconTrash/></button>
+                          </div>
+                          
+                          <div className="flex gap-2 mb-2 px-1">
+                            <span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Competidor</span>
+                            <span className="w-20 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span>
+                            <span className="w-8"></span>
+                          </div>
+                          
+                          {table.data.map((row, rIndex) => (
+                            <div key={rIndex} className="flex gap-2 mb-2">
+                              <input className="flex-1 bg-white border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome" />
+                              <input className="w-20 bg-white border border-gray-300 rounded p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Valor" />
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 bg-white border border-gray-300 hover:bg-red-50 px-3 rounded transition-colors" title="Excluir Linha"><IconTrash/></button>
+                            </div>
+                          ))}
+                          <button onClick={() => handleAddTableRow(tIndex)} className="w-full mt-3 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg flex items-center justify-center gap-1 hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest"><IconPlus/> Adicionar Linha de Competidor</button>
+                        </div>
+                      ))}
+                      
+                      {/* BOTÃO PARA CRIAR UMA TABELA INTEIRA NOVA */}
+                      <button onClick={handleAddTable} className="w-full bg-[#0B172A] text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors mt-2 text-sm uppercase tracking-widest"><IconPlus/> Criar Novo Campeonato (Tabela)</button>
+                      
+                   </div>
+                 )}
+
+                 {adminTab === 'transmissoes' && (
+                   <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
+                     {(upcomingMatches[adminCategoryFilter] || []).map((match, mIndex) => (
+                       <div key={mIndex} className="flex flex-col md:flex-row gap-3 mb-4 bg-white p-3 rounded-lg border border-gray-200 items-center">
+                         <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
+                         <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
+                         <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} placeholder="Sáb, 16:00"/>
+                         <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded"><IconTrash/></button>
+                       </div>
+                     ))}
+                     <button onClick={handleAddUpcoming} className="w-full bg-[#10B981] text-[#0B172A] font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-400 transition-colors mt-4 text-sm uppercase tracking-widest"><IconPlus/> Adicionar Jogo/Evento</button>
+                   </div>
+                 )}
+              </div>
+            )}
+
+            {adminTab === 'ticker' && (
+              <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-3xl mx-auto">
+                 <div className="mb-8">
+                    <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Giro Ao Vivo (Vermelho)</h2>
+                    <p className="text-sm text-gray-500 font-medium">As manchetes que rolam continuamente no topo do site.</p>
+                 </div>
+                 <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                    {tickerItems.map((item, index) => (
+                      <div key={index} className="flex gap-2">
+                        <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-[#10B981]" value={item} onChange={(e) => handleUpdateTicker(index, e.target.value)} />
+                        <button onClick={() => handleRemoveTicker(index)} className="bg-white border border-gray-300 text-red-500 px-4 rounded-lg hover:bg-red-50 transition-colors"><IconTrash/></button>
+                      </div>
+                    ))}
+                    <button onClick={handleAddTicker} className="w-full bg-[#0B172A] text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors mt-2 text-sm uppercase tracking-widest"><IconPlus/> Adicionar Frase</button>
+                 </div>
+              </div>
+            )}
+
+          </div>
+        );
+      }
+
+      return (
+        <div>
+          {renderHeader()}
+          {renderTicker()}
+          {view === 'home' && renderHomeView()}
+          {view === 'article' && renderArticleView()}
+          {view === 'admin' && renderAdminPanel()}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<ArenaNews />);
+  </script>
+</body>
+</html>
