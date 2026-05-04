@@ -33,12 +33,12 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
 
-    // --- CONEXÃO COM O SUPABASE ---
     const SUPABASE_URL = "https://abysylbeskbzqinyxxxq.supabase.co";
     const SUPABASE_KEY = "sb_publishable_bN16VNLMRvH8BHimENwnLw_J15rCVGT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // GERADOR DE ID UNIVERSAL (Evita conflitos no Banco de Dados)
+    const CHAVE_API_SPORTS = ""; 
+
     const genId = () => {
       return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -46,49 +46,39 @@
       });
     };
 
-    const CHAVE_API_SPORTS = ""; 
-
-    // ÍCONES
     const IconTrophy = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>;
     const IconActivity = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>;
     const IconMenu = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>;
     const IconSettings = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>;
     const IconChevronLeft = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>;
     const IconTrash = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
-    const IconEdit = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>;
-    const IconEye = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>;
-    const IconTrending = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>;
-    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
     const IconClock = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>;
+    const IconTrending = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>;
     const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
+    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
     const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
 
     const formatDateTime = (isoString) => {
       if (!isoString) return 'Recente';
-      try {
-        const dateObj = new Date(isoString);
-        return dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-      } catch (e) { return isoString; }
+      try { return new Date(isoString).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }); } 
+      catch (e) { return isoString; }
     };
 
     function ArenaNews() {
       const [view, setView] = useState('home');
       const [selectedArticle, setSelectedArticle] = useState(null);
       const [activeCategory, setActiveCategory] = useState('Todas');
-      
       const [isAdmin, setIsAdmin] = useState(false);
       const [adminTab, setAdminTab] = useState('noticias');
-
-      // ESTADOS DOS DADOS
       const [loading, setLoading] = useState(true);
+
       const [categorias, setCategorias] = useState(['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC', 'Sobre Mim']);
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState(["🔴 Bem-vindo ao Arena News! Conectando..."]);
+      const [tickerItems, setTickerItems] = useState([]);
       const [perfil, setPerfil] = useState({ foto: '', bio: '', curiosidades: '' });
 
-      // CARREGAMENTO SEGURO
       const loadAllData = useCallback(async () => {
         setLoading(true);
         try {
@@ -144,8 +134,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
         setView('article');
       };
-
-      // --- COMPONENTES VISUAIS DA VITRINE (SEU DESIGN PRESERVADO) ---
 
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
@@ -293,7 +281,6 @@
                 </div>
               )}
 
-              {/* TABELAS PREMIUM COM FOTOS (Idêntico à inspiração) */}
               {currentTablesArray.map((tableInfo, tIndex) => {
                 const hasExtendedStats = tableInfo.data && tableInfo.data.some(row => row.pj || row.vit || row.e || row.der);
                 const hasImages = tableInfo.data && tableInfo.data.some(row => row.image);
@@ -387,17 +374,23 @@
         );
       };
 
-      // ==========================================
-      // PAINEL GERAL DE ADMINISTRAÇÃO (COM SUPABASE)
-      // ==========================================
-
       const renderAdminPanel = () => {
-        // --- 1. NOTÍCIAS ---
+        // Funções de Upload
         const handleImageUpload = (e) => {
           const file = e.target.files[0];
           if (file) { const reader = new FileReader(); reader.onloadend = () => setNewPost({...newPost, image: reader.result}); reader.readAsDataURL(file); }
         };
 
+        const handlePerfilImageUpload = (e) => {
+          const file = e.target.files[0];
+          if (file) { 
+            const reader = new FileReader(); 
+            reader.onloadend = () => setPerfil({...perfil, foto: reader.result}); 
+            reader.readAsDataURL(file); 
+          }
+        };
+
+        // Salvar Notícias
         const handleSaveArticle = async (e) => {
           e.preventDefault();
           try {
@@ -414,9 +407,9 @@
             }
             setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); 
             setEditingId(null); 
-            loadAllData(); // Recarrega os dados fresquinhos
+            loadAllData();
             setView('home'); 
-          } catch(err) { alert("Erro na requisição. Verifique sua internet."); }
+          } catch(err) { alert("Erro na requisição."); }
         };
 
         const handleRemoveArticle = async (id) => {
@@ -428,7 +421,7 @@
           }
         };
 
-        // --- 2. TABELAS ---
+        // Salvar Tabelas
         const handleAddTable = () => {
           const nova = { id: `temp-${Date.now()}`, category: adminCategoryFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
           const updated = { ...dashboardTables };
@@ -499,7 +492,6 @@
           }
         };
 
-        // --- 3. CATEGORIAS ---
         const handleAddCategory = async () => {
           if(!newCatName) return;
           const { error } = await supabase.from('categorias').insert([{ nome: newCatName }]);
@@ -509,7 +501,7 @@
           loadAllData();
         };
 
-        // --- 4. TRANSMISSÕES ---
+        // Salvar Transmissões
         const handleUpdateUpcoming = (index, field, value) => {
           const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
           updated[adminCategoryFilter][index][field] = value; setUpcomingMatches(updated);
@@ -534,7 +526,7 @@
           loadAllData();
         };
 
-        // --- 5. TICKER ---
+        // Salvar Ticker
         const handleUpdateTicker = (index, value) => { const updated = [...tickerItems]; updated[index] = value; setTickerItems(updated); };
         const handleAddTicker = () => { setTickerItems([...tickerItems, "Novo destaque..."]); };
         const handleRemoveTicker = (index) => { setTickerItems(tickerItems.filter((_, i) => i !== index)); };
@@ -549,10 +541,9 @@
           loadAllData();
         };
 
-        // --- 6. PERFIL (SOBRE MIM) ---
+        // Salvar Perfil
         const handleSavePerfil = async () => {
-          const perfilId = '11111111-1111-1111-1111-111111111111'; // UUID fixo para o perfil único
-          
+          const perfilId = '11111111-1111-1111-1111-111111111111'; 
           const { data } = await supabase.from('perfil').select('id').eq('id', perfilId);
           let error;
           
@@ -690,7 +681,7 @@
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.vit || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'vit', e.target.value)} placeholder="V" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.e || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'e', e.target.value)} placeholder="E" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.der || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'der', e.target.value)} placeholder="D" />
-                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir"><IconTrash/></button>
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir Linha"><IconTrash/></button>
                             </div>
                           ))}
                         </div>
@@ -709,7 +700,7 @@
 
             {adminTab === 'transmissoes' && (
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
-                 <select className="w-full bg-white border border-gray-300 rounded-lg p-4 font-bold outline-none mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                 <select className="w-full bg-white border border-gray-300 rounded-lg p-4 font-bold outline-none shadow-sm mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
                     {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                  </select>
                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
@@ -718,7 +709,7 @@
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
                        <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} placeholder="Sáb, 16:00"/>
-                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded"><IconTrash/></button>
+                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors"><IconTrash/></button>
                      </div>
                    ))}
                    <div className="flex flex-col md:flex-row gap-4 mt-4">
@@ -733,6 +724,7 @@
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-3xl mx-auto">
                  <div className="mb-8">
                     <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Giro Ao Vivo (Destaques)</h2>
+                    <p className="text-sm text-gray-500 font-medium">As manchetes que rolam continuamente no topo do site.</p>
                  </div>
                  <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                     {tickerItems.map((item, index) => (
@@ -743,7 +735,7 @@
                     ))}
                     <div className="flex gap-4 mt-2">
                       <button onClick={handleAddTicker} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Frase</button>
-                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-bold py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
+                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-black py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
                     </div>
                  </div>
               </div>
@@ -756,9 +748,10 @@
                     <p className="text-sm text-gray-500 font-medium">Atualize suas informações profissionais para a aba "Sobre Mim".</p>
                  </div>
                  <div className="flex flex-col gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
-                    <div>
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">URL da sua Foto Redonda</label>
-                      <input className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none font-medium focus:border-[#10B981]" value={perfil.foto || ''} onChange={e => setPerfil({...perfil, foto: e.target.value})} placeholder="Ex: https://...jpg" />
+                    <div className="bg-white border border-gray-300 rounded-lg p-4">
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-3">Foto de Perfil (Upload)</label>
+                      <input type="file" accept="image/*" onChange={handlePerfilImageUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
+                      {perfil.foto && <img src={perfil.foto} className="mt-4 w-24 h-24 object-cover rounded-full border-4 border-[#10B981] shadow-md"/>}
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia</label>
