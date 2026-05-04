@@ -33,10 +33,18 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
 
-    // --- CONEXÃO COM A NUVEM ---
+    // --- CONEXÃO COM O SUPABASE ---
     const SUPABASE_URL = "https://abysylbeskbzqinyxxxq.supabase.co";
     const SUPABASE_KEY = "sb_publishable_bN16VNLMRvH8BHimENwnLw_J15rCVGT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // GERADOR DE ID UNIVERSAL (Evita conflitos no Banco de Dados)
+    const genId = () => {
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    };
 
     const CHAVE_API_SPORTS = ""; 
 
@@ -47,48 +55,45 @@
     const IconSettings = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>;
     const IconChevronLeft = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>;
     const IconTrash = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>;
-    const IconClock = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>;
+    const IconEdit = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>;
+    const IconEye = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>;
     const IconTrending = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>;
+    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
+    const IconClock = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>;
     const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
     const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
-    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
 
     const formatDateTime = (isoString) => {
-      if (!isoString) return 'Data não definida';
-      try { return new Date(isoString).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }); } 
-      catch (e) { return isoString; }
+      if (!isoString) return 'Recente';
+      try {
+        const dateObj = new Date(isoString);
+        return dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
+      } catch (e) { return isoString; }
     };
 
     function ArenaNews() {
-      // ESTADOS GERAIS
-      const [view, setView] = useState('home'); 
+      const [view, setView] = useState('home');
       const [selectedArticle, setSelectedArticle] = useState(null);
       const [activeCategory, setActiveCategory] = useState('Todas');
+      
       const [isAdmin, setIsAdmin] = useState(false);
       const [adminTab, setAdminTab] = useState('noticias');
-      const [loading, setLoading] = useState(true);
 
-      // ESTADOS DE DADOS DA NUVEM
+      // ESTADOS DOS DADOS
+      const [loading, setLoading] = useState(true);
       const [categorias, setCategorias] = useState(['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC', 'Sobre Mim']);
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState([]);
+      const [tickerItems, setTickerItems] = useState(["🔴 Bem-vindo ao Arena News! Conectando..."]);
       const [perfil, setPerfil] = useState({ foto: '', bio: '', curiosidades: '' });
 
-      // ESTADOS DO ADMIN
-      const getNowLocalISO = () => new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16);
-      const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
-      const [editingId, setEditingId] = useState(null);
-      const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol');
-      const [newCatName, setNewCatName] = useState(''); // VARIÁVEL FALTANTE CORRIGIDA!
-
-      // BUSCAR DADOS (PROTEGIDO CONTRA ERROS)
+      // CARREGAMENTO SEGURO
       const loadAllData = useCallback(async () => {
         setLoading(true);
         try {
           const { data: cats } = await supabase.from('categorias').select('nome');
-          if (cats && cats.length > 0) setCategorias(['Todas', ...cats.map(c => c.nome), 'Sobre Mim']);
+          if (cats && cats.length > 0) setCategorias(['Todas', ...cats.map(c => c.nome)]);
 
           const { data: news } = await supabase.from('noticias').select('*').order('date', { ascending: false });
           if (news) setArticles(news);
@@ -110,11 +115,11 @@
           const { data: ticks } = await supabase.from('tickers').select('message');
           if (ticks && ticks.length > 0) setTickerItems(ticks.map(t => t.message));
 
-          const { data: perf } = await supabase.from('perfil').select('*').eq('id', '1').single();
-          if (perf) setPerfil(perf);
+          const { data: perf } = await supabase.from('perfil').select('*').eq('id', '11111111-1111-1111-1111-111111111111');
+          if (perf && perf.length > 0) setPerfil(perf[0]);
 
         } catch (err) {
-          console.log("Banco de dados ainda sem dados ou conectando...");
+          console.log("Banco vazio ou offline. Inicializando limpo.");
         } finally {
           setLoading(false);
         }
@@ -122,18 +127,25 @@
 
       useEffect(() => { loadAllData(); }, [loadAllData]);
 
-      // ACESSO À REDAÇÃO
+      const getNowLocalISO = () => new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16);
+      const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
+      const [editingId, setEditingId] = useState(null);
+      const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol'); 
+      const [newCatName, setNewCatName] = useState('');
+
       const handleSecretAccess = () => {
         if (isAdmin) { setIsAdmin(false); setView('home'); return; }
-        const pin = prompt("🔐 Insira o PIN da Redação:");
-        if (pin === "2026") setIsAdmin(true); 
+        const pin = prompt("🔐 Acesso Restrito da Redação. Insira o PIN:");
+        if (pin === "2026") { setIsAdmin(true); }
       };
 
-      const openArticle = (article) => { setSelectedArticle(article); window.scrollTo({ top: 0, behavior: 'smooth' }); setView('article'); };
+      const openArticle = (article) => {
+        setSelectedArticle(article);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setView('article');
+      };
 
-      // ==========================================
-      // COMPONENTES DA VITRINE (PÁGINA INICIAL)
-      // ==========================================
+      // --- COMPONENTES VISUAIS DA VITRINE (SEU DESIGN PRESERVADO) ---
 
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
@@ -147,14 +159,22 @@
                 </h1>
               </div>
             </div>
+
             <nav className="hidden lg:flex items-center gap-1 overflow-x-auto no-scrollbar">
               {Array.from(new Set(categorias)).map(cat => (
-                <button key={cat} onClick={() => {setActiveCategory(cat); setView('home');}} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${activeCategory === cat ? 'bg-[#10B981] text-[#0B172A] shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>{cat}</button>
+                <button key={cat} onClick={() => {setActiveCategory(cat); setView('home');}} className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all duration-300 ${activeCategory === cat ? 'bg-[#10B981] text-[#0B172A] shadow-[0_0_10px_rgba(16,185,129,0.4)]' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}>
+                  {cat}
+                </button>
               ))}
             </nav>
+
             <div className="flex items-center gap-4">
               {isAdmin && (
-                <button onClick={() => { setView(view === 'admin' ? 'home' : 'admin'); setAdminTab('noticias'); }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
+                <button onClick={() => {
+                  setView(view === 'admin' ? 'home' : 'admin');
+                  setEditingId(null);
+                  setAdminTab('noticias');
+                }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
                   <IconSettings /> Painel Geral
                 </button>
               )}
@@ -171,7 +191,7 @@
             </div>
             <div className="w-full overflow-hidden ml-36">
               <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
-                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Aguardando Plantão...</span>}
+                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Aguardando Destaques...</span>}
               </div>
             </div>
           </div>
@@ -209,14 +229,15 @@
         const currentTablesArray = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
         const currentUpcoming = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
 
-        if (loading) return <div className="text-center py-32 text-gray-400 font-black animate-pulse uppercase tracking-widest">Carregando o Portal...</div>;
+        if (loading) return <div className="text-center py-32 text-gray-400 font-black animate-pulse uppercase tracking-widest">Carregando Banco de Dados...</div>;
 
         return (
           <main className="max-w-[1400px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
               {!featured && (
                 <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm border-2 border-dashed">
-                  <h2 className="text-xl font-bold text-gray-400">Nenhuma notícia publicada ainda nesta editoria.</h2>
+                  <IconActivity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-400">Nenhuma notícia publicada.</h2>
                 </div>
               )}
 
@@ -272,7 +293,7 @@
                 </div>
               )}
 
-              {/* TABELAS PREMIUM (Agora Exibe as Fotos e Colunas Extras) */}
+              {/* TABELAS PREMIUM COM FOTOS (Idêntico à inspiração) */}
               {currentTablesArray.map((tableInfo, tIndex) => {
                 const hasExtendedStats = tableInfo.data && tableInfo.data.some(row => row.pj || row.vit || row.e || row.der);
                 const hasImages = tableInfo.data && tableInfo.data.some(row => row.image);
@@ -328,7 +349,7 @@
                       </table>
                     </div>
                   </div>
-                )
+                );
               })}
             </aside>
           </main>
@@ -367,83 +388,125 @@
       };
 
       // ==========================================
-      // PAINEL GERAL (ADMIN) - SEGURO E SEM LAG
+      // PAINEL GERAL DE ADMINISTRAÇÃO (COM SUPABASE)
       // ==========================================
+
       const renderAdminPanel = () => {
-        
-        // --- 1. NOTÍCIAS (Salva só no botão) ---
+        // --- 1. NOTÍCIAS ---
         const handleImageUpload = (e) => {
           const file = e.target.files[0];
           if (file) { const reader = new FileReader(); reader.onloadend = () => setNewPost({...newPost, image: reader.result}); reader.readAsDataURL(file); }
         };
+
         const handleSaveArticle = async (e) => {
           e.preventDefault();
           try {
             if (editingId) {
               const updated = { ...newPost, id: editingId };
-              setArticles(articles.map(a => a.id === editingId ? updated : a));
-              await supabase.from('noticias').upsert(updated);
+              const { error } = await supabase.from('noticias').update(updated).eq('id', editingId);
+              if(error) { alert("Erro do Supabase: " + error.message); return; }
+              alert("Matéria editada com sucesso!");
             } else {
-              const obj = { id: Date.now().toString(), ...newPost, views: '0' };
-              setArticles([obj, ...articles]);
-              await supabase.from('noticias').insert([obj]);
+              const obj = { id: genId(), ...newPost, views: '0' };
+              const { error } = await supabase.from('noticias').insert([obj]);
+              if(error) { alert("Erro do Supabase: " + error.message); return; }
+              alert("Notícia publicada no portal!");
             }
-            alert("Sucesso! Notícia publicada no Portal.");
             setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); 
-            setEditingId(null); setView('home'); 
-          } catch(err) { alert("Erro de conexão."); }
+            setEditingId(null); 
+            loadAllData(); // Recarrega os dados fresquinhos
+            setView('home'); 
+          } catch(err) { alert("Erro na requisição. Verifique sua internet."); }
         };
 
-        // --- 2. TABELAS E ESTATÍSTICAS (Digita Local, Salva no Botão) ---
+        const handleRemoveArticle = async (id) => {
+          if(confirm('Tem certeza que deseja apagar essa notícia?')) {
+            const { error } = await supabase.from('noticias').delete().eq('id', id);
+            if(error) { alert("Erro: " + error.message); return; }
+            alert("Notícia apagada.");
+            loadAllData();
+          }
+        };
+
+        // --- 2. TABELAS ---
         const handleAddTable = () => {
-          const nova = { id: Date.now().toString(), category: adminCategoryFilter, title: 'Nova Tabela / Ranking', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
+          const nova = { id: `temp-${Date.now()}`, category: adminCategoryFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
           const updated = { ...dashboardTables };
           if (!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
           updated[adminCategoryFilter].push(nova);
           setDashboardTables(updated);
         };
+
         const handleUpdateTableData = (tableIndex, rowIndex, field, value) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data[rowIndex][field] = value;
           setDashboardTables(updated);
         };
+
         const handleUpdateTableTitle = (tableIndex, value) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].title = value;
           setDashboardTables(updated);
         };
+
         const handleAddTableRow = (tableIndex) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data.push({ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' });
           setDashboardTables(updated);
         };
+
         const handleRemoveTableRow = (tableIndex, rowIndex) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data = updated[adminCategoryFilter][tableIndex].data.filter((_, i) => i !== rowIndex);
           setDashboardTables(updated);
         };
+
         const handleSaveTableToCloud = async (table) => {
           try {
-            await supabase.from('tabelas_dashboard').upsert({ id: table.id, category: table.category, title: table.title, type: table.type, data: table.data });
-            alert('Tabela/Ranking atualizado no Portal Público!');
-          } catch (err) { alert('Erro ao sincronizar tabela.'); }
+            const isNew = table.id.startsWith('temp-');
+            const payload = {
+                id: isNew ? genId() : table.id,
+                category: table.category,
+                title: table.title,
+                type: table.type,
+                data: table.data
+            };
+            
+            let error;
+            if (isNew) {
+                const res = await supabase.from('tabelas_dashboard').insert([payload]);
+                error = res.error;
+            } else {
+                const res = await supabase.from('tabelas_dashboard').update(payload).eq('id', table.id);
+                error = res.error;
+            }
+            
+            if (error) { alert("Erro do Supabase: " + error.message); return; }
+            alert('Campeonato salvo com sucesso no Portal Público!');
+            loadAllData();
+          } catch(e) { alert("Falha na rede."); }
         };
+
         const handleRemoveTable = async (tIndex) => {
           if(confirm('Excluir este campeonato?')) {
-            const updated = { ...dashboardTables };
-            const tableId = updated[adminCategoryFilter][tIndex].id;
-            updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== tIndex);
-            setDashboardTables(updated);
-            if (tableId) await supabase.from('tabelas_dashboard').delete().eq('id', tableId);
+            const table = dashboardTables[adminCategoryFilter][tIndex];
+            if (!table.id.startsWith('temp-')) {
+              const { error } = await supabase.from('tabelas_dashboard').delete().eq('id', table.id);
+              if(error) { alert("Erro: " + error.message); return; }
+            }
+            alert("Campeonato removido.");
+            loadAllData();
           }
         };
 
         // --- 3. CATEGORIAS ---
         const handleAddCategory = async () => {
           if(!newCatName) return;
-          setCategorias([...categorias, newCatName]);
-          await supabase.from('categorias').insert([{ nome: newCatName }]);
-          setNewCatName(''); alert("Novo esporte adicionado!");
+          const { error } = await supabase.from('categorias').insert([{ nome: newCatName }]);
+          if (error) { alert("Erro: " + error.message); return; }
+          alert("Novo esporte adicionado!");
+          setNewCatName('');
+          loadAllData();
         };
 
         // --- 4. TRANSMISSÕES ---
@@ -461,8 +524,14 @@
         const handleSaveTransmissionsToCloud = async () => {
           const list = upcomingMatches[adminCategoryFilter] || [];
           await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
-          if (list.length > 0) await supabase.from('transmissoes').insert(list.map((m, i) => ({ id: Date.now().toString()+i, category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date })));
+          
+          if (list.length > 0) {
+            const payload = list.map(m => ({ id: genId(), category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date }));
+            const { error } = await supabase.from('transmissoes').insert(payload);
+            if (error) { alert("Erro: " + error.message); return; }
+          }
           alert("Agenda sincronizada com sucesso!");
+          loadAllData();
         };
 
         // --- 5. TICKER ---
@@ -470,23 +539,42 @@
         const handleAddTicker = () => { setTickerItems([...tickerItems, "Novo destaque..."]); };
         const handleRemoveTicker = (index) => { setTickerItems(tickerItems.filter((_, i) => i !== index)); };
         const handleSaveTickerToCloud = async () => {
-          await supabase.from('tickers').delete().neq('id', '99999'); // Limpa tudo
-          if(tickerItems.length > 0) await supabase.from('tickers').insert(tickerItems.map((m, i) => ({ id: Date.now().toString()+i, message: m })));
+          await supabase.from('tickers').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
+          if(tickerItems.length > 0) {
+            const payload = tickerItems.map(m => ({ id: genId(), message: m }));
+            const { error } = await supabase.from('tickers').insert(payload);
+            if (error) { alert("Erro: " + error.message); return; }
+          }
           alert("Giro atualizado e no ar!");
+          loadAllData();
         };
 
         // --- 6. PERFIL (SOBRE MIM) ---
         const handleSavePerfil = async () => {
-          await supabase.from('perfil').upsert({ id: '1', ...perfil });
+          const perfilId = '11111111-1111-1111-1111-111111111111'; // UUID fixo para o perfil único
+          
+          const { data } = await supabase.from('perfil').select('id').eq('id', perfilId);
+          let error;
+          
+          if (data && data.length > 0) {
+              const res = await supabase.from('perfil').update(perfil).eq('id', perfilId);
+              error = res.error;
+          } else {
+              const res = await supabase.from('perfil').insert([{ id: perfilId, ...perfil }]);
+              error = res.error;
+          }
+          
+          if(error) { alert("Erro do banco: " + error.message); return; }
           alert("Página Sobre Mim atualizada no portal!");
+          loadAllData();
         };
 
         return (
           <div className="max-w-[1400px] mx-auto px-4 py-8 animate-fade-slide">
             
-            <div className="flex flex-wrap gap-2 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex flex-wrap gap-4 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
               {['noticias', 'tabelas', 'transmissoes', 'ticker', 'sobre'].map(t => (
-                <button key={t} onClick={() => setAdminTab(t)} className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-colors ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <button key={t} onClick={() => setAdminTab(t)} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-colors ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
                   {t === 'sobre' ? 'Sobre Mim' : t}
                 </button>
               ))}
@@ -497,23 +585,23 @@
                 <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
                   <form onSubmit={handleSaveArticle} className="flex flex-col gap-6">
                     <div>
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Manchete (Título)</label>
-                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manchete (Título)</label>
+                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold mt-2 outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Editoria:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Editoria:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold mt-2 outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
                           {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                         </select>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconClock /> Data/Hora:</label>
-                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconClock /> Data/Hora:</label>
+                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconLink /> Notícia Anterior:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconLink /> Notícia Anterior:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
                           <option value="">Não vincular</option>
                           {articles.filter(a => a.id !== editingId).map(a => <option key={a.id} value={a.id}>{(a.title || 'Sem título').substring(0, 25)}...</option>)}
                         </select>
@@ -524,8 +612,8 @@
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
                       {newPost.image && <img src={newPost.image} className="mt-4 h-40 object-cover rounded-lg shadow-md border border-gray-200"/>}
                     </div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#10B981]" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 outline-none focus:border-[#10B981]" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 mt-2 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
                     <div className="flex gap-4">
                       <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg hover:bg-emerald-400 transition-all">{editingId ? 'Salvar Edição' : 'Publicar Notícia'}</button>
                       {editingId && <button type="button" onClick={() => {setEditingId(null); setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() })}} className="bg-gray-100 text-gray-600 font-bold py-4 px-8 rounded-xl uppercase">Cancelar</button>}
@@ -540,7 +628,7 @@
                         <div className="mb-2"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{a.category || 'Sem Cat'}</span><p className="text-sm font-bold text-[#0B172A] line-clamp-2 mt-1">{a.title || 'Sem Título'}</p></div>
                         <div className="flex justify-end gap-2 border-t border-gray-200 pt-2">
                           <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 p-2 rounded-xl text-[10px] font-black uppercase">Editar</button>
-                          <button onClick={async () => {if(confirm('Tem certeza que deseja apagar?')) { setArticles(articles.filter(x => x.id !== a.id)); await supabase.from('noticias').delete().eq('id', a.id); }}} className="text-red-500 bg-red-50 p-2 rounded-xl text-[10px] font-black uppercase">Apagar</button>
+                          <button onClick={() => handleRemoveArticle(a.id)} className="text-red-500 bg-red-50 p-2 rounded-xl text-[10px] font-black uppercase">Apagar</button>
                         </div>
                       </div>
                     ))}
@@ -577,15 +665,15 @@
                       <div key={table.id || tIndex} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                         
                         <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                           <input className="flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome da Tabela" />
-                           <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Tabela"><IconTrash/></button>
+                           <input className="flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome do Campeonato ou Estatística" />
+                           <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Campeonato Inteiro"><IconTrash/></button>
                         </div>
                         
                         <div className="flex flex-col gap-2 mb-2">
                           <div className="flex gap-2 px-1">
-                            <span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome / Time</span>
+                            <span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Atleta</span>
                             <span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span>
-                            <span className="w-40 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden md:block">URL Foto/Logo</span>
+                            <span className="w-40 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden md:block">URL da Foto</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">PJ</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">V</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">E</span>
@@ -597,12 +685,12 @@
                             <div key={rIndex} className="flex flex-wrap md:flex-nowrap gap-2 bg-white p-2 border border-gray-200 rounded items-center">
                               <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome" />
                               <input className="w-20 md:w-16 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts" />
-                              <input className="w-full md:w-40 bg-gray-50 border border-gray-300 rounded p-2 text-xs outline-none focus:border-[#10B981]" value={row.image || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'image', e.target.value)} placeholder="https://..." />
+                              <input className="w-full md:w-40 bg-gray-50 border border-gray-300 rounded p-2 text-xs outline-none focus:border-[#10B981]" value={row.image || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'image', e.target.value)} placeholder="https://...jpg" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.pj || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'pj', e.target.value)} placeholder="PJ" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.vit || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'vit', e.target.value)} placeholder="V" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.e || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'e', e.target.value)} placeholder="E" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.der || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'der', e.target.value)} placeholder="D" />
-                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir Linha"><IconTrash/></button>
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir"><IconTrash/></button>
                             </div>
                           ))}
                         </div>
@@ -621,7 +709,7 @@
 
             {adminTab === 'transmissoes' && (
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
-                 <select className="w-full bg-white border border-gray-300 rounded-lg p-4 font-bold outline-none shadow-sm mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                 <select className="w-full bg-white border border-gray-300 rounded-lg p-4 font-bold outline-none mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
                     {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                  </select>
                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
@@ -630,7 +718,7 @@
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
                        <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} placeholder="Sáb, 16:00"/>
-                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors"><IconTrash/></button>
+                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded"><IconTrash/></button>
                      </div>
                    ))}
                    <div className="flex flex-col md:flex-row gap-4 mt-4">
@@ -645,7 +733,6 @@
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-3xl mx-auto">
                  <div className="mb-8">
                     <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Giro Ao Vivo (Destaques)</h2>
-                    <p className="text-sm text-gray-500 font-medium">As manchetes que rolam continuamente no topo do site.</p>
                  </div>
                  <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                     {tickerItems.map((item, index) => (
@@ -656,7 +743,7 @@
                     ))}
                     <div className="flex gap-4 mt-2">
                       <button onClick={handleAddTicker} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Frase</button>
-                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-black py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
+                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-bold py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
                     </div>
                  </div>
               </div>
