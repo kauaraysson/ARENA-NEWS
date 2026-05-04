@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arena News - Portal Esportivo Premium</title>
+  <title>Crônicas Esportivas - Portal de Esportes</title>
   
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23EF4444'/><text x='50' y='75' font-family='Arial' font-size='75' font-weight='bold' fill='white' text-anchor='middle'>A</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -87,7 +87,7 @@
       'trends': { name: 'Assuntos do Momento (Sem Foto)', cols: ['Tópico', 'Status'] }
     };
 
-    function ArenaNews() {
+    function CrônicasEsportivas() {
       // ESTADOS DE NAVEGAÇÃO E AUTENTICAÇÃO
       const [view, setView] = useState('home');
       const [selectedArticle, setSelectedArticle] = useState(null);
@@ -342,7 +342,7 @@
 
               {featured && (
                 <div onClick={() => openArticle(featured)} className="group cursor-pointer relative overflow-hidden rounded-3xl shadow-2xl aspect-[16/10] md:aspect-[21/9] bg-[#0B172A] mb-10 border border-gray-200/20">
-                  <img src={featured.image || 'https://via.placeholder.com/800x400?text=Arena+News'} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
+                  <img src={featured.image || 'https://via.placeholder.com/800x400?text=Crônicas+Esportivas'} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/70 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 w-full p-8 md:p-10">
                     <div className="flex items-center gap-3 mb-4">
@@ -881,7 +881,7 @@
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia Curta</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Arena News..." />
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Crônicas Esportivas..." />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades</label>
@@ -929,7 +929,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<ArenaNews />);
+    root.render(<CrônicasEsportivas />);
   </script>
 </body>
 </html>
