@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Crônicas Esportivas - Portal de Esportes</title>
+  <title>Crônicas Esportivas - Portal Esportivo Premium</title>
   
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23EF4444'/><text x='50' y='75' font-family='Arial' font-size='75' font-weight='bold' fill='white' text-anchor='middle'>A</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23EF4444'/><text x='50' y='75' font-family='Arial' font-size='75' font-weight='bold' fill='white' text-anchor='middle'>C</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
   
@@ -28,10 +28,10 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="selection:bg-[#EF4444] selection:text-white">
+<body class="selection:bg-[#EF4444] selection:text-white relative">
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     // --- CONEXÃO BLINDADA COM O SUPABASE ---
     const SUPABASE_URL = "https://abysylbeskbzqinyxxxq.supabase.co";
@@ -87,7 +87,7 @@
       'trends': { name: 'Assuntos do Momento (Sem Foto)', cols: ['Tópico', 'Status'] }
     };
 
-    function CrônicasEsportivas() {
+    function CronicasEsportivas() {
       // ESTADOS DE NAVEGAÇÃO E AUTENTICAÇÃO
       const [view, setView] = useState('home');
       const [selectedArticle, setSelectedArticle] = useState(null);
@@ -96,6 +96,7 @@
       const [isAdmin, setIsAdmin] = useState(false);
       const [adminTab, setAdminTab] = useState('noticias');
       
+      // Modal de Senha
       const [showLogin, setShowLogin] = useState(false);
       const [pinInput, setPinInput] = useState('');
 
@@ -105,15 +106,15 @@
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState([]);
+      const [tickerItems, setTickerItems] = useState(["🔴 Bem-vindo ao Crônicas Esportivas! Conectando com a Nuvem..."]);
       const [perfil, setPerfil] = useState({ foto: '', bio: '', curiosidades: '' });
 
-      // CARREGAMENTO SEGURO
+      // O Trabalhador Assíncrono (Modo Silencioso se não for a 1ª vez)
       const loadAllData = useCallback(async (isInitial = false) => {
         if (isInitial) setInitialLoading(true);
         try {
           const { data: cats } = await supabase.from('categorias').select('nome');
-          if (cats && cats.length > 0) setCategorias(['Todas', ...cats.map(c => c.nome), 'Sobre Mim']);
+          if (cats && cats.length > 0) setCategorias(['Todas', ...cats.map(c => c.nome)]);
 
           const { data: news } = await supabase.from('noticias').select('*').order('date', { ascending: false });
           if (news) setArticles(news);
@@ -139,15 +140,25 @@
           if (perf) setPerfil(perf);
 
         } catch (err) {
-          console.log("Banco de dados ainda sem dados ou conectando silenciosamente.");
+          console.log("Sincronização em background finalizada.");
         } finally {
           if (isInitial) setInitialLoading(false);
         }
       }, []);
 
-      useEffect(() => { loadAllData(true); }, [loadAllData]);
+      useEffect(() => { 
+        loadAllData(true); 
+        
+        // REALTIME ATIVADO: O site escuta o banco e atualiza sozinho sem recarregar a tela
+        const channel = supabase.channel('schema-db-changes')
+          .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+            loadAllData(false); // Carrega silenciosamente
+          })
+          .subscribe();
 
-      // ESTADOS DO ADMIN
+        return () => { supabase.removeChannel(channel); };
+      }, [loadAllData]);
+
       const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
       const [editingId, setEditingId] = useState(null);
       const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol'); 
@@ -155,9 +166,12 @@
 
       const verifyPin = () => {
         if (pinInput === "2026") {
-          setIsAdmin(true); setShowLogin(false); setPinInput('');
+          setIsAdmin(true);
+          setShowLogin(false);
+          setPinInput('');
         } else {
-          alert("PIN Incorreto."); setPinInput('');
+          alert("PIN Incorreto.");
+          setPinInput('');
         }
       };
 
@@ -167,17 +181,17 @@
         setView('article');
       };
 
-      // --- MÓDULOS DE RENDERIZAÇÃO DA VITRINE ---
+      // === COMPONENTES VISUAIS ===
 
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
           <div className="max-w-[1400px] mx-auto px-4 h-20 flex items-center justify-between">
             <div className="flex items-center gap-6">
               <button className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"><IconMenu /></button>
-              <div className="cursor-pointer select-none group" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
+              <div className="cursor-pointer select-none group flex items-center gap-1" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
                 <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-1">
-                  <span onDoubleClick={() => isAdmin ? (setIsAdmin(false), setView('home')) : setShowLogin(true)} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
-                  RENA<span className="font-light text-gray-300">NEWS</span>
+                  <span onDoubleClick={() => isAdmin ? (setIsAdmin(false), setView('home')) : setShowLogin(true)} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">C</span>
+                  RÔNICAS<span className="font-light text-gray-300"> ESPORTIVAS</span>
                 </h1>
               </div>
             </div>
@@ -209,7 +223,7 @@
             </div>
             <div className="w-full overflow-hidden ml-36">
               <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
-                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">O Melhor do Esporte Aqui.</span>}
+                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Conectado ao Portal...</span>}
               </div>
             </div>
           </div>
@@ -220,7 +234,7 @@
         <main className="max-w-[900px] mx-auto px-4 py-16 animate-fade-slide">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row">
             <div className="md:w-1/3 bg-[#0B172A] p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r-[3px] border-[#10B981]">
-              <img src={perfil.foto || 'https://via.placeholder.com/150?text=Foto'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
+              <img src={perfil.foto || 'https://via.placeholder.com/150?text=Autora'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
               <h2 className="text-2xl font-black text-white text-center">A Autora</h2>
             </div>
             <div className="md:w-2/3 p-10 flex flex-col gap-6">
@@ -237,10 +251,9 @@
         </main>
       );
 
-      // Renderizador Inteligente de Tabelas da Vitrine (Lê o formato e desenha certo)
+      // Renderizador Dinâmico de Tabelas para a Home
       const renderPublicTable = (tableInfo, tIndex) => {
         const type = tableInfo.type || 'futebol_class';
-        const template = TABLE_TEMPLATES[type] || TABLE_TEMPLATES['futebol_class'];
         const isTrend = type === 'trends';
 
         return (
@@ -254,7 +267,7 @@
               <table className="w-full text-sm text-left whitespace-nowrap">
                 <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
                   <tr>
-                    {template.cols.map((col, idx) => (
+                    {TABLE_TEMPLATES[type].cols.map((col, idx) => (
                       <th key={idx} className={`px-4 py-3 tracking-widest ${idx === 0 && !isTrend ? 'text-center w-12' : ''} ${idx > 1 ? 'text-right' : ''}`}>{col}</th>
                     ))}
                   </tr>
@@ -263,6 +276,7 @@
                   {(tableInfo.data || []).map((row, idx) => (
                     <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
                       
+                      {/* Lógica condicional por tipo de tabela */}
                       {type === 'futebol_class' && (
                         <React.Fragment>
                           <td className={`px-4 py-3 text-center text-xs font-black ${idx === 0 ? 'text-[#10B981]' : 'text-gray-500'}`}>{idx + 1}</td>
@@ -284,8 +298,8 @@
                           <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
                             {row.image && <img src={row.image} className="w-8 h-8 rounded-full object-cover border border-gray-200" />} {row.player}
                           </td>
-                          <td className="px-4 py-3 text-right text-xs text-gray-500 flex items-center justify-end gap-2">
-                             {row.team_image && <img src={row.team_image} className="w-5 h-5 rounded-full object-cover border border-gray-100" />} {row.team}
+                          <td className="px-4 py-3 text-right text-xs text-gray-500 flex items-center justify-end gap-1">
+                             {row.team_image && <img src={row.team_image} className="w-4 h-4 rounded-full object-cover" />} {row.team}
                           </td>
                           <td className="px-4 py-3 text-right font-black text-[#0B172A]">{row.stat}</td>
                         </React.Fragment>
@@ -328,21 +342,20 @@
         const currentTablesArray = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
         const currentUpcoming = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
 
-        if (initialLoading) return <div className="max-w-[1400px] mx-auto text-center py-32 text-gray-300 font-black animate-pulse text-xl uppercase tracking-widest border-2 border-dashed rounded-3xl m-4">Carregando Banco de Dados...</div>;
+        if (initialLoading) return <div className="max-w-[1400px] mx-auto px-4 py-32 text-center font-black text-gray-300 animate-pulse text-2xl uppercase tracking-widest">Carregando Banco de Dados...</div>;
 
         return (
           <main className="max-w-[1400px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
               {!featured && (
                 <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm border-2 border-dashed">
-                  <IconActivity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                   <h2 className="text-xl font-bold text-gray-400">Nenhuma notícia publicada ainda nesta editoria.</h2>
                 </div>
               )}
 
               {featured && (
                 <div onClick={() => openArticle(featured)} className="group cursor-pointer relative overflow-hidden rounded-3xl shadow-2xl aspect-[16/10] md:aspect-[21/9] bg-[#0B172A] mb-10 border border-gray-200/20">
-                  <img src={featured.image || 'https://via.placeholder.com/800x400?text=Crônicas+Esportivas'} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
+                  <img src={featured.image || `https://via.placeholder.com/800x400?text=Crônicas+Esportivas`} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-[1.03] transition-all duration-700 ease-in-out" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/70 to-transparent"></div>
                   <div className="absolute bottom-0 left-0 w-full p-8 md:p-10">
                     <div className="flex items-center gap-3 mb-4">
@@ -359,7 +372,7 @@
                 {restNews.map((a) => (
                   <div key={a.id} onClick={() => openArticle(a)} className="group cursor-pointer bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 flex flex-col overflow-hidden transition-all duration-300 transform hover:-translate-y-1">
                     <div className="aspect-video overflow-hidden relative">
-                      <img src={a.image || 'https://via.placeholder.com/400x200?text=Notícia'} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={a.image || `https://via.placeholder.com/400x200?text=Crônicas+Esportivas`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                       <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-[#0B172A] text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded shadow-sm">{a.category || 'Extra'}</div>
                     </div>
                     <div className="p-5 flex flex-col flex-1">
@@ -367,6 +380,7 @@
                       <p className="text-sm text-gray-500 line-clamp-2 mb-4">{a.excerpt}</p>
                       <div className="mt-auto flex items-center justify-between text-xs text-gray-400 font-semibold pt-4 border-t border-gray-50">
                         <span className="flex items-center gap-1 truncate"><IconClock /> {formatDateTime(a.date)}</span>
+                        <span className="flex items-center gap-1"><IconEye /> {a.views || '0'}</span>
                       </div>
                     </div>
                   </div>
@@ -414,7 +428,7 @@
             <h1 className="text-4xl md:text-5xl font-black text-[#0B172A] leading-[1.1] mb-6 tracking-tight">{selectedArticle.title || 'Sem Título'}</h1>
             <p className="text-xl text-gray-500 font-medium mb-8 border-l-[3px] border-[#10B981] pl-5 leading-relaxed">{selectedArticle.excerpt}</p>
             <div className="relative mb-12">
-              <img src={selectedArticle.image || 'https://via.placeholder.com/800x400'} className="w-full aspect-[21/9] object-cover rounded-3xl shadow-xl" />
+              <img src={selectedArticle.image || `https://via.placeholder.com/800x400?text=Crônicas+Esportivas`} className="w-full aspect-[21/9] object-cover rounded-3xl shadow-xl" />
             </div>
             {linkedNews && (
               <div onClick={() => openArticle(linkedNews)} className="bg-emerald-50 border border-[#10B981]/30 rounded-2xl p-6 mb-10 cursor-pointer hover:bg-emerald-100 transition-colors group shadow-sm">
@@ -670,8 +684,8 @@
                       </label>
                       {newPost.image && <img src={newPost.image} className="mt-4 h-40 object-cover rounded-lg shadow-md border border-gray-200 w-full max-w-sm"/>}
                     </div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#10B981]" value={newPost.excerpt || ''} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content || ''} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 outline-none focus:border-[#10B981]" value={newPost.excerpt || ''} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 mt-2 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content || ''} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
                     <div className="flex gap-4">
                       <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg hover:bg-emerald-400 transition-all">{editingId ? 'Salvar Edição' : 'Publicar Notícia'}</button>
                       {editingId && <button type="button" onClick={() => {setEditingId(null); setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() })}} className="bg-gray-100 text-gray-600 font-bold py-4 px-8 rounded-xl uppercase">Cancelar</button>}
@@ -700,22 +714,22 @@
                  <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                       <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Painel de Competições</h2>
-                      <p className="text-sm text-gray-500 font-medium">Use a coluna Upload para enviar o escudo do time ou a foto do atleta.</p>
+                      <p className="text-sm text-gray-500 font-medium">Você pode escolher o formato da tabela de acordo com o esporte.</p>
                     </div>
                  </div>
                  
                  <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col md:flex-row items-center gap-6 shadow-inner">
                    <div className="flex-1 w-full">
-                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Filtrar por Esporte:</label>
+                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Filtrar por Editoria:</label>
                      <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none shadow-sm mt-2" value={adminCategoryFilter || ''} onChange={e => setAdminCategoryFilter(e.target.value)}>
                         {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                      </select>
                    </div>
                    <div className="flex-1 w-full">
-                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Criar Novo Esporte:</label>
+                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Nova Editoria de Esporte:</label>
                      <div className="flex gap-2 mt-2">
                        <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 outline-none focus:border-[#10B981]" value={newCatName || ''} onChange={e => setNewCatName(e.target.value)} placeholder="Ex: Fórmula 1" />
-                       <button onClick={handleAddCategory} className="bg-[#10B981] px-5 rounded-lg text-[#0B172A] hover:bg-emerald-400 transition-colors shadow-sm"><IconPlus/></button>
+                       <button onClick={handleAddCategory} className="bg-[#10B981] px-5 rounded-lg text-[#0B172A] font-black hover:bg-emerald-400 transition-colors shadow-sm"><IconPlus/></button>
                      </div>
                    </div>
                  </div>
@@ -738,11 +752,11 @@
                         </div>
                         
                         <div className="flex flex-col gap-3">
-                          {/* CABEÇALHOS DO ADMIN POR FORMATO */}
+                          {/* CABEÇALHO DINÂMICO PARA O ADMIN */}
                           <div className="flex gap-2 px-1 hidden md:flex">
-                             {type === 'futebol_class' && <React.Fragment><span className="w-10"></span><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Escudo</span><span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">PJ</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">V</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">E</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">D</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">SG</span></React.Fragment>}
-                             {type === 'estatisticas' && <React.Fragment><span className="w-10"></span><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jogador / Foto</span><span className="w-10"></span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Time / Escudo</span><span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Gols/Pts</span></React.Fragment>}
-                             {type === 'rank_simples' && <React.Fragment><span className="w-10"></span><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome / Foto</span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">País/Cat</span><span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span></React.Fragment>}
+                             {type === 'futebol_class' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Escudo</span><span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">PJ</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">V</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">E</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">D</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">SG</span></React.Fragment>}
+                             {type === 'estatisticas' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jogador / Foto</span><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Escudo</span><span className="w-20 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Gols/Pts</span></React.Fragment>}
+                             {type === 'rank_simples' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome / Foto</span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">País/Cat</span><span className="w-20 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span></React.Fragment>}
                              {type === 'trends' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tópico (Assunto)</span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Status</span></React.Fragment>}
                              <span className="w-10"></span>
                           </div>
@@ -752,8 +766,8 @@
                               
                               {type === 'futebol_class' && (
                                 <React.Fragment>
-                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 w-10 h-10" title="Foto do Escudo">
-                                    {row.image ? <img src={row.image} className="w-full h-full rounded-full object-cover" /> : <IconUpload/>}
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
                                   </label>
                                   <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Time" />
@@ -768,31 +782,31 @@
 
                               {type === 'estatisticas' && (
                                 <React.Fragment>
-                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 w-10 h-10" title="Foto do Jogador">
-                                    {row.image ? <img src={row.image} className="w-full h-full rounded-full object-cover" /> : <IconUpload/>}
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto Jogador">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
                                   </label>
-                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.player || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'player', e.target.value)} placeholder="Nome Jogador" />
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.player || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'player', e.target.value)} placeholder="Jogador" />
                                   
-                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 w-10 h-10 ml-2" title="Escudo do Time">
-                                    {row.team_image ? <img src={row.team_image} className="w-full h-full rounded-full object-cover" /> : <IconUpload/>}
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 ml-2" title="Escudo Time">
+                                    {row.team_image ? <img src={row.team_image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'team_image', res))} />
                                   </label>
-                                  <input className="w-full md:w-32 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Time" />
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Time" />
                                   
-                                  <input className="w-16 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Nº (Gols)" />
+                                  <input className="w-20 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Nº" />
                                 </React.Fragment>
                               )}
 
                               {type === 'rank_simples' && (
                                 <React.Fragment>
-                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 w-10 h-10" title="Foto do Atleta/Bandeira">
-                                    {row.image ? <img src={row.image} className="w-full h-full rounded-full object-cover" /> : <IconUpload/>}
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto/Bandeira">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
                                     <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
                                   </label>
-                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Atleta/Time" />
-                                  <input className="w-full md:w-32 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm text-center outline-none focus:border-[#10B981]" value={row.country || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'country', e.target.value)} placeholder="País (Ex: BRA)" />
-                                  <input className="w-16 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts/Pos" />
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Atleta" />
+                                  <input className="w-32 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm text-center outline-none focus:border-[#10B981]" value={row.country || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'country', e.target.value)} placeholder="País (Ex: BRA)" />
+                                  <input className="w-20 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts/Pos" />
                                 </React.Fragment>
                               )}
 
@@ -803,13 +817,13 @@
                                 </React.Fragment>
                               )}
 
-                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors ml-auto border border-transparent hover:border-red-200"><IconTrash/></button>
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors ml-auto"><IconTrash/></button>
                             </div>
                           ))}
                         </div>
-                        <div className="flex flex-col md:flex-row gap-4 mt-6 border-t border-gray-200 pt-4">
-                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-white text-gray-600 font-bold py-3.5 rounded-xl hover:bg-gray-50 transition-colors text-xs uppercase tracking-widest border-2 border-dashed border-gray-300">+ Adicionar Participante</button>
-                          <button onClick={() => handleSaveTableToCloud(table)} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-3.5 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Tabela na Nuvem</button>
+                        <div className="flex flex-col md:flex-row gap-4 mt-6">
+                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-white text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-xs uppercase tracking-widest border-2 border-dashed border-gray-300">+ Linha</button>
+                          <button onClick={() => handleSaveTableToCloud(table)} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-3 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Tabela na Nuvem</button>
                         </div>
                       </div>
                     );
@@ -881,11 +895,11 @@
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia Curta</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Crônicas Esportivas..." />
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Crônicas Esportivas..." />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-serif focus:border-[#10B981]" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algum fato extra..." />
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades / Prêmios</label>
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-serif focus:border-[#10B981]" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algum fato extra, currículo..." />
                     </div>
                     <button onClick={handleSavePerfil} className="w-full bg-[#10B981] text-[#0B172A] font-black py-5 rounded-xl shadow-lg mt-2 text-sm uppercase tracking-widest hover:bg-emerald-400 transition-transform transform hover:-translate-y-1">✔ Atualizar Perfil Público</button>
                  </div>
