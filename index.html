@@ -33,14 +33,14 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback } = React;
 
-    // --- MOTOR: Conexão com o Supabase ---
+    // --- CONEXÃO COM A NUVEM ---
     const SUPABASE_URL = "https://abysylbeskbzqinyxxxq.supabase.co";
     const SUPABASE_KEY = "sb_publishable_bN16VNLMRvH8BHimENwnLw_J15rCVGT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const CHAVE_API_SPORTS = ""; 
 
-    // ÍCONES UTILITÁRIOS
+    // ÍCONES
     const IconTrophy = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>;
     const IconActivity = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>;
     const IconMenu = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>;
@@ -51,39 +51,39 @@
     const IconTrending = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>;
     const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
     const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
+    const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
 
     const formatDateTime = (isoString) => {
-      if (!isoString) return 'Recente';
+      if (!isoString) return 'Data não definida';
       try { return new Date(isoString).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }); } 
       catch (e) { return isoString; }
     };
 
     function ArenaNews() {
-      // ESTADOS DE CONTROLO DE TELA E NAVEGAÇÃO
+      // ESTADOS GERAIS
       const [view, setView] = useState('home'); 
       const [selectedArticle, setSelectedArticle] = useState(null);
       const [activeCategory, setActiveCategory] = useState('Todas');
-      
       const [isAdmin, setIsAdmin] = useState(false);
       const [adminTab, setAdminTab] = useState('noticias');
-      
-      // ESTADOS DOS DADOS DA NUVEM
       const [loading, setLoading] = useState(true);
+
+      // ESTADOS DE DADOS DA NUVEM
       const [categorias, setCategorias] = useState(['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC', 'Sobre Mim']);
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState(["🔴 A carregar destaques da nuvem..."]);
+      const [tickerItems, setTickerItems] = useState([]);
       const [perfil, setPerfil] = useState({ foto: '', bio: '', curiosidades: '' });
 
-      // ESTADOS DOS FORMULÁRIOS
+      // ESTADOS DO ADMIN
       const getNowLocalISO = () => new Date().toLocaleString('sv').replace(' ', 'T').slice(0, 16);
       const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
       const [editingId, setEditingId] = useState(null);
       const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol');
-      const [newCatName, setNewCatName] = useState('');
+      const [newCatName, setNewCatName] = useState(''); // VARIÁVEL FALTANTE CORRIGIDA!
 
-      // TRABALHADOR ASSÍNCRONO: Puxa os dados do Supabase de forma protegida
+      // BUSCAR DADOS (PROTEGIDO CONTRA ERROS)
       const loadAllData = useCallback(async () => {
         setLoading(true);
         try {
@@ -114,7 +114,7 @@
           if (perf) setPerfil(perf);
 
         } catch (err) {
-          console.error("Modo silencioso: Aguardando inserção de dados no banco.");
+          console.log("Banco de dados ainda sem dados ou conectando...");
         } finally {
           setLoading(false);
         }
@@ -126,18 +126,20 @@
       const handleSecretAccess = () => {
         if (isAdmin) { setIsAdmin(false); setView('home'); return; }
         const pin = prompt("🔐 Insira o PIN da Redação:");
-        if (pin === "2026") { setIsAdmin(true); }
+        if (pin === "2026") setIsAdmin(true); 
       };
 
       const openArticle = (article) => { setSelectedArticle(article); window.scrollTo({ top: 0, behavior: 'smooth' }); setView('article'); };
 
       // ==========================================
-      // COMPONENTES DA VITRINE (Design Intacto)
+      // COMPONENTES DA VITRINE (PÁGINA INICIAL)
       // ==========================================
+
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
           <div className="max-w-[1400px] mx-auto px-4 h-20 flex items-center justify-between">
             <div className="flex items-center gap-6">
+              <button className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"><IconMenu /></button>
               <div className="cursor-pointer select-none group" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
                 <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-1">
                   <span onDoubleClick={handleSecretAccess} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
@@ -169,7 +171,7 @@
             </div>
             <div className="w-full overflow-hidden ml-36">
               <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
-                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Aguardando notícias...</span>}
+                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Aguardando Plantão...</span>}
               </div>
             </div>
           </div>
@@ -180,17 +182,17 @@
         <main className="max-w-[900px] mx-auto px-4 py-16 animate-fade-slide">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row">
             <div className="md:w-1/3 bg-[#0B172A] p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r-[3px] border-[#10B981]">
-              <img src={perfil.foto || 'https://via.placeholder.com/150'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
+              <img src={perfil.foto || 'https://via.placeholder.com/150?text=Foto'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
               <h2 className="text-2xl font-black text-white text-center">A Autora</h2>
             </div>
             <div className="md:w-2/3 p-10 flex flex-col gap-6">
               <div>
-                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">Biografia Profissional</h3>
+                <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">Biografia</h3>
                 <p className="text-[#0B172A] text-lg font-medium leading-relaxed whitespace-pre-wrap">{perfil.bio || 'Biografia em construção...'}</p>
               </div>
               <div className="border-t border-gray-100 pt-6">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">Curiosidades</h3>
-                <p className="text-gray-600 leading-relaxed font-serif whitespace-pre-wrap">{perfil.curiosidades || 'Nada registrado no momento.'}</p>
+                <p className="text-gray-600 leading-relaxed font-serif whitespace-pre-wrap">{perfil.curiosidades || 'Nenhuma curiosidade registrada.'}</p>
               </div>
             </div>
           </div>
@@ -270,7 +272,7 @@
                 </div>
               )}
 
-              {/* TABELAS INTELIGENTES (Com detecção de imagens e estatísticas avançadas) */}
+              {/* TABELAS PREMIUM (Agora Exibe as Fotos e Colunas Extras) */}
               {currentTablesArray.map((tableInfo, tIndex) => {
                 const hasExtendedStats = tableInfo.data && tableInfo.data.some(row => row.pj || row.vit || row.e || row.der);
                 const hasImages = tableInfo.data && tableInfo.data.some(row => row.image);
@@ -287,7 +289,7 @@
                         <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
                           <tr>
                             <th className="px-4 py-2 tracking-widest">{tableInfo.type === 'trends' ? 'Tópico' : 'Competidor'}</th>
-                            <th className="px-4 py-2 text-right tracking-widest">{tableInfo.type === 'points' ? 'Pts' : 'Status'}</th>
+                            <th className="px-4 py-2 text-right tracking-widest">{tableInfo.type === 'points' ? 'Pts' : (tableInfo.type === 'rank' ? 'Pos' : 'Status')}</th>
                             {hasExtendedStats && (
                               <React.Fragment>
                                 <th className="px-2 py-2 text-center tracking-widest text-gray-400">PJ</th>
@@ -326,7 +328,7 @@
                       </table>
                     </div>
                   </div>
-                );
+                )
               })}
             </aside>
           </main>
@@ -356,7 +358,7 @@
                 <div className="flex items-center gap-2 text-[#10B981] font-black uppercase text-xs tracking-widest mb-3">
                   <IconLink /> Notícias anteriores:
                 </div>
-                <h4 className="text-[#0B172A] font-bold text-xl group-hover:text-[#10B981] transition-colors mb-2">{linkedNews.title || 'Sem título'}</h4>
+                <h4 className="text-[#0B172A] font-bold text-xl group-hover:text-[#10B981] transition-colors mb-2">{linkedNews.title || 'Sem Título'}</h4>
               </div>
             )}
             <div className="text-lg max-w-none text-gray-800 leading-loose font-serif whitespace-pre-wrap"><p>{selectedArticle.content}</p></div>
@@ -365,113 +367,86 @@
       };
 
       // ==========================================
-      // O PAINEL DE GESTÃO (Supabase Injetado, Design Mantido)
+      // PAINEL GERAL (ADMIN) - SEGURO E SEM LAG
       // ==========================================
       const renderAdminPanel = () => {
         
-        // --- 1. NOTÍCIAS ---
+        // --- 1. NOTÍCIAS (Salva só no botão) ---
         const handleImageUpload = (e) => {
           const file = e.target.files[0];
           if (file) { const reader = new FileReader(); reader.onloadend = () => setNewPost({...newPost, image: reader.result}); reader.readAsDataURL(file); }
         };
-
         const handleSaveArticle = async (e) => {
           e.preventDefault();
           try {
             if (editingId) {
-              const updatedPost = { ...newPost, id: editingId };
-              setArticles(articles.map(a => a.id === editingId ? updatedPost : a));
-              await supabase.from('noticias').update(updatedPost).eq('id', editingId);
-              alert("Matéria atualizada!");
+              const updated = { ...newPost, id: editingId };
+              setArticles(articles.map(a => a.id === editingId ? updated : a));
+              await supabase.from('noticias').upsert(updated);
             } else {
-              const newId = Date.now().toString();
-              const newArticle = { ...newPost, id: newId, views: '0' };
-              setArticles([newArticle, ...articles]);
-              await supabase.from('noticias').insert([newArticle]);
-              alert("Notícia publicada na Nuvem!");
+              const obj = { id: Date.now().toString(), ...newPost, views: '0' };
+              setArticles([obj, ...articles]);
+              await supabase.from('noticias').insert([obj]);
             }
+            alert("Sucesso! Notícia publicada no Portal.");
             setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); 
-            setEditingId(null); 
-          } catch(err) { alert("Houve um problema de conexão."); }
+            setEditingId(null); setView('home'); 
+          } catch(err) { alert("Erro de conexão."); }
         };
 
-        const handleRemoveArticle = async (id) => {
-          if(confirm('Apagar permanentemente?')) {
-            setArticles(articles.filter(x => x.id !== id));
-            await supabase.from('noticias').delete().eq('id', id);
-          }
-        };
-
-        // --- 2. TABELAS ---
+        // --- 2. TABELAS E ESTATÍSTICAS (Digita Local, Salva no Botão) ---
         const handleAddTable = () => {
-          const nova = { id: `temp-${Date.now()}`, category: adminCategoryFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
+          const nova = { id: Date.now().toString(), category: adminCategoryFilter, title: 'Nova Tabela / Ranking', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
           const updated = { ...dashboardTables };
           if (!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
           updated[adminCategoryFilter].push(nova);
           setDashboardTables(updated);
         };
-
         const handleUpdateTableData = (tableIndex, rowIndex, field, value) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data[rowIndex][field] = value;
           setDashboardTables(updated);
         };
-
         const handleUpdateTableTitle = (tableIndex, value) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].title = value;
           setDashboardTables(updated);
         };
-
         const handleAddTableRow = (tableIndex) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data.push({ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' });
           setDashboardTables(updated);
         };
-
         const handleRemoveTableRow = (tableIndex, rowIndex) => {
           const updated = { ...dashboardTables };
           updated[adminCategoryFilter][tableIndex].data = updated[adminCategoryFilter][tableIndex].data.filter((_, i) => i !== rowIndex);
           setDashboardTables(updated);
         };
-
-        // BOTÃO MESTRE: Salva a tabela no Supabase só quando clicar no botão final
-        const handleSaveTableToCloud = async (table, tIndex) => {
+        const handleSaveTableToCloud = async (table) => {
           try {
-            if (table.id && !table.id.includes('temp-')) {
-              await supabase.from('tabelas_dashboard').update({ title: table.title, data: table.data }).eq('id', table.id);
-            } else {
-              const newId = Date.now().toString();
-              await supabase.from('tabelas_dashboard').insert([{ id: newId, category: table.category, title: table.title, type: table.type, data: table.data }]);
-              
-              // Atualiza o ID temporário no estado React para o novo ID Real
-              const updated = { ...dashboardTables };
-              updated[adminCategoryFilter][tIndex].id = newId;
-              setDashboardTables(updated);
-            }
-            alert('Tabela salva no Portal!');
-          } catch(e) { alert("Erro de gravação"); }
+            await supabase.from('tabelas_dashboard').upsert({ id: table.id, category: table.category, title: table.title, type: table.type, data: table.data });
+            alert('Tabela/Ranking atualizado no Portal Público!');
+          } catch (err) { alert('Erro ao sincronizar tabela.'); }
         };
-
         const handleRemoveTable = async (tIndex) => {
           if(confirm('Excluir este campeonato?')) {
             const updated = { ...dashboardTables };
-            const table = updated[adminCategoryFilter][tIndex];
+            const tableId = updated[adminCategoryFilter][tIndex].id;
             updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== tIndex);
             setDashboardTables(updated);
-            if (table.id && !table.id.includes('temp-')) await supabase.from('tabelas_dashboard').delete().eq('id', table.id);
+            if (tableId) await supabase.from('tabelas_dashboard').delete().eq('id', tableId);
           }
         };
 
+        // --- 3. CATEGORIAS ---
         const handleAddCategory = async () => {
           if(!newCatName) return;
           setCategorias([...categorias, newCatName]);
           await supabase.from('categorias').insert([{ nome: newCatName }]);
-          setNewCatName('');
-          alert("Editoria adicionada!");
+          setNewCatName(''); alert("Novo esporte adicionado!");
         };
 
-        // --- 3. TRANSMISSÕES ---
+        // --- 4. TRANSMISSÕES ---
         const handleUpdateUpcoming = (index, field, value) => {
           const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
           updated[adminCategoryFilter][index][field] = value; setUpcomingMatches(updated);
@@ -484,30 +459,26 @@
           const updated = { ...upcomingMatches }; updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== index); setUpcomingMatches(updated);
         };
         const handleSaveTransmissionsToCloud = async () => {
-          const items = upcomingMatches[adminCategoryFilter] || [];
+          const list = upcomingMatches[adminCategoryFilter] || [];
           await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
-          if (items.length > 0) {
-            await supabase.from('transmissoes').insert(items.map((m, i) => ({ id: Date.now().toString()+i, category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date })));
-          }
-          alert('Agenda Salva!');
+          if (list.length > 0) await supabase.from('transmissoes').insert(list.map((m, i) => ({ id: Date.now().toString()+i, category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date })));
+          alert("Agenda sincronizada com sucesso!");
         };
 
-        // --- 4. TICKER ---
+        // --- 5. TICKER ---
         const handleUpdateTicker = (index, value) => { const updated = [...tickerItems]; updated[index] = value; setTickerItems(updated); };
         const handleAddTicker = () => { setTickerItems([...tickerItems, "Novo destaque..."]); };
         const handleRemoveTicker = (index) => { setTickerItems(tickerItems.filter((_, i) => i !== index)); };
         const handleSaveTickerToCloud = async () => {
           await supabase.from('tickers').delete().neq('id', '99999'); // Limpa tudo
-          if(tickerItems.length > 0) {
-            await supabase.from('tickers').insert(tickerItems.map((m, i) => ({ id: Date.now().toString()+i, message: m })));
-          }
-          alert('Giro Atualizado!');
+          if(tickerItems.length > 0) await supabase.from('tickers').insert(tickerItems.map((m, i) => ({ id: Date.now().toString()+i, message: m })));
+          alert("Giro atualizado e no ar!");
         };
 
-        // --- 5. PERFIL ---
+        // --- 6. PERFIL (SOBRE MIM) ---
         const handleSavePerfil = async () => {
           await supabase.from('perfil').upsert({ id: '1', ...perfil });
-          alert("Perfil da Autora Atualizado!");
+          alert("Página Sobre Mim atualizada no portal!");
         };
 
         return (
@@ -526,23 +497,23 @@
                 <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
                   <form onSubmit={handleSaveArticle} className="flex flex-col gap-6">
                     <div>
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manchete (Título)</label>
-                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold mt-2 outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})}/>
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Manchete (Título)</label>
+                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Editoria:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold mt-2 outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Editoria:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
                           {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                         </select>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconClock /> Data/Hora:</label>
-                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})}/>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconClock /> Data/Hora:</label>
+                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconLink /> Notícia Anterior:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconLink /> Notícia Anterior:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
                           <option value="">Não vincular</option>
                           {articles.filter(a => a.id !== editingId).map(a => <option key={a.id} value={a.id}>{(a.title || 'Sem título').substring(0, 25)}...</option>)}
                         </select>
@@ -553,10 +524,10 @@
                       <input type="file" accept="image/*" onChange={handleImageUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
                       {newPost.image && <img src={newPost.image} className="mt-4 h-40 object-cover rounded-lg shadow-md border border-gray-200"/>}
                     </div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lide</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 outline-none" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})}/></div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 mt-2 outline-none resize-none font-serif text-lg" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})}/></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#10B981]" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
                     <div className="flex gap-4">
-                      <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg">{editingId ? 'Salvar Edição' : 'Publicar Notícia'}</button>
+                      <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg hover:bg-emerald-400 transition-all">{editingId ? 'Salvar Edição' : 'Publicar Notícia'}</button>
                       {editingId && <button type="button" onClick={() => {setEditingId(null); setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() })}} className="bg-gray-100 text-gray-600 font-bold py-4 px-8 rounded-xl uppercase">Cancelar</button>}
                     </div>
                   </form>
@@ -565,11 +536,11 @@
                   <h3 className="font-black text-[#0B172A] mb-4 uppercase text-sm tracking-wider">Histórico de Publicações</h3>
                   <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                     {articles.map(a => (
-                      <div key={a.id} className="bg-gray-50 p-4 rounded-2xl flex flex-col border border-gray-100">
+                      <div key={a.id} className="bg-gray-50 p-4 rounded-2xl flex flex-col border border-gray-100 hover:border-[#10B981] transition-colors">
                         <div className="mb-2"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{a.category || 'Sem Cat'}</span><p className="text-sm font-bold text-[#0B172A] line-clamp-2 mt-1">{a.title || 'Sem Título'}</p></div>
                         <div className="flex justify-end gap-2 border-t border-gray-200 pt-2">
-                          <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 p-2 rounded-xl text-xs font-bold">Editar</button>
-                          <button onClick={() => handleRemoveArticle(a.id)} className="text-red-500 bg-red-50 p-2 rounded-xl text-xs font-bold">Apagar</button>
+                          <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 p-2 rounded-xl text-[10px] font-black uppercase">Editar</button>
+                          <button onClick={async () => {if(confirm('Tem certeza que deseja apagar?')) { setArticles(articles.filter(x => x.id !== a.id)); await supabase.from('noticias').delete().eq('id', a.id); }}} className="text-red-500 bg-red-50 p-2 rounded-xl text-[10px] font-black uppercase">Apagar</button>
                         </div>
                       </div>
                     ))}
@@ -582,7 +553,7 @@
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-5xl mx-auto">
                  <div className="mb-6">
                     <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Estatísticas, Ranking e Tabelas</h2>
-                    <p className="text-sm text-gray-500 font-medium">Use a coluna "URL da Foto" para exibir o escudo do time ou o rosto do atleta (Avançado).</p>
+                    <p className="text-sm text-gray-500 font-medium">Use a coluna "URL Foto" para exibir o escudo do time ou o rosto do atleta.</p>
                  </div>
                  
                  <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center gap-4">
@@ -595,25 +566,26 @@
                    <div className="flex-1 w-full">
                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Criar Novo Esporte:</label>
                      <div className="flex gap-2 mt-1">
-                       <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 outline-none" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Ex: Fórmula 1" />
-                       <button onClick={handleAddCategory} className="bg-[#10B981] px-4 rounded-lg"><IconPlus/></button>
+                       <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 outline-none focus:border-[#10B981]" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Ex: Fórmula 1" />
+                       <button onClick={handleAddCategory} className="bg-[#10B981] px-4 rounded-lg text-[#0B172A] hover:bg-emerald-400 transition-colors"><IconPlus/></button>
                      </div>
                    </div>
                  </div>
 
                  <div className="grid grid-cols-1 gap-8">
                     {(dashboardTables[adminCategoryFilter] || []).map((table, tIndex) => (
-                      <div key={tIndex} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
+                      <div key={table.id || tIndex} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
+                        
                         <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                           <input className="flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome do Campeonato ou Estatística" />
-                           <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Campeonato Inteiro"><IconTrash/></button>
+                           <input className="flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome da Tabela" />
+                           <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Tabela"><IconTrash/></button>
                         </div>
                         
                         <div className="flex flex-col gap-2 mb-2">
                           <div className="flex gap-2 px-1">
-                            <span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Atleta</span>
+                            <span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome / Time</span>
                             <span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span>
-                            <span className="w-40 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden md:block">URL da Foto</span>
+                            <span className="w-40 text-[10px] font-bold text-gray-400 uppercase tracking-widest hidden md:block">URL Foto/Logo</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">PJ</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">V</span>
                             <span className="w-10 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center hidden md:block">E</span>
@@ -625,29 +597,31 @@
                             <div key={rIndex} className="flex flex-wrap md:flex-nowrap gap-2 bg-white p-2 border border-gray-200 rounded items-center">
                               <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome" />
                               <input className="w-20 md:w-16 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts" />
-                              <input className="w-full md:w-40 bg-gray-50 border border-gray-300 rounded p-2 text-xs outline-none focus:border-[#10B981]" value={row.image || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'image', e.target.value)} placeholder="https://...jpg" />
+                              <input className="w-full md:w-40 bg-gray-50 border border-gray-300 rounded p-2 text-xs outline-none focus:border-[#10B981]" value={row.image || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'image', e.target.value)} placeholder="https://..." />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.pj || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'pj', e.target.value)} placeholder="PJ" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.vit || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'vit', e.target.value)} placeholder="V" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.e || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'e', e.target.value)} placeholder="E" />
                               <input className="w-12 md:w-10 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.der || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'der', e.target.value)} placeholder="D" />
-                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir"><IconTrash/></button>
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors" title="Excluir Linha"><IconTrash/></button>
                             </div>
                           ))}
                         </div>
-                        <div className="flex gap-4 mt-3">
-                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest">+ Adicionar Participante</button>
-                          <button onClick={() => handleSaveTableToCloud(table, tIndex)} className="flex-1 bg-[#0B172A] text-[#10B981] font-bold py-3 rounded-lg hover:bg-gray-800 transition-colors text-xs uppercase tracking-widest shadow-lg">Salvar Campeonato</button>
+                        <div className="flex flex-col md:flex-row gap-4 mt-3">
+                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Linha Nova</button>
+                          <button onClick={() => handleSaveTableToCloud(table)} className="flex-1 bg-[#0B172A] text-[#10B981] font-black py-3 rounded-lg hover:bg-gray-800 transition-colors text-xs uppercase tracking-widest shadow-lg border border-[#10B981]">✔ Salvar Campeonato</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={handleAddTable} className="w-full bg-gray-100 border-2 border-dashed border-gray-300 text-gray-500 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors mt-2 text-sm uppercase tracking-widest"><IconPlus/> Criar Nova Tabela de Competição</button>
+                    
+                    <button onClick={handleAddTable} className="w-full bg-white text-[#0B172A] font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors mt-2 text-sm uppercase tracking-widest border-2 border-dashed border-[#10B981]"><IconPlus/> Criar Nova Tabela Aqui</button>
+                    
                  </div>
               </div>
             )}
 
             {adminTab === 'transmissoes' && (
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-4xl mx-auto">
-                 <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                 <select className="w-full bg-white border border-gray-300 rounded-lg p-4 font-bold outline-none shadow-sm mb-6" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
                     {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                  </select>
                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
@@ -656,12 +630,12 @@
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
                        <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
                        <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} placeholder="Sáb, 16:00"/>
-                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded"><IconTrash/></button>
+                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors"><IconTrash/></button>
                      </div>
                    ))}
-                   <div className="flex gap-4 mt-4">
-                     <button onClick={handleAddUpcoming} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest"><IconPlus/> Adicionar Jogo</button>
-                     <button onClick={handleSaveTransmissionsToCloud} className="flex-1 bg-[#10B981] text-[#0B172A] font-bold py-3 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">Salvar Agenda Inteira</button>
+                   <div className="flex flex-col md:flex-row gap-4 mt-4">
+                     <button onClick={handleAddUpcoming} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Jogo</button>
+                     <button onClick={handleSaveTransmissionsToCloud} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-3 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Agenda Inteira</button>
                    </div>
                  </div>
               </div>
@@ -670,10 +644,10 @@
             {adminTab === 'ticker' && (
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-3xl mx-auto">
                  <div className="mb-8">
-                    <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Giro Ao Vivo (Vermelho)</h2>
+                    <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Giro Ao Vivo (Destaques)</h2>
                     <p className="text-sm text-gray-500 font-medium">As manchetes que rolam continuamente no topo do site.</p>
                  </div>
-                 <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                 <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                     {tickerItems.map((item, index) => (
                       <div key={index} className="flex gap-2">
                         <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-[#10B981]" value={item} onChange={(e) => handleUpdateTicker(index, e.target.value)} />
@@ -681,8 +655,8 @@
                       </div>
                     ))}
                     <div className="flex gap-4 mt-2">
-                      <button onClick={handleAddTicker} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest"><IconPlus/> Adicionar Frase</button>
-                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-bold py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">Salvar Giro no Ar</button>
+                      <button onClick={handleAddTicker} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Frase</button>
+                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-black py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
                     </div>
                  </div>
               </div>
@@ -694,20 +668,20 @@
                     <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Perfil: Sobre a Autora</h2>
                     <p className="text-sm text-gray-500 font-medium">Atualize suas informações profissionais para a aba "Sobre Mim".</p>
                  </div>
-                 <div className="flex flex-col gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-200">
+                 <div className="flex flex-col gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                     <div>
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">URL da Foto de Perfil</label>
-                      <input className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none" value={perfil.foto || ''} onChange={e => setPerfil({...perfil, foto: e.target.value})} placeholder="https://..." />
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">URL da sua Foto Redonda</label>
+                      <input className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none font-medium focus:border-[#10B981]" value={perfil.foto || ''} onChange={e => setPerfil({...perfil, foto: e.target.value})} placeholder="Ex: https://...jpg" />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia Curta</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none resize-none font-medium" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Quem sou eu..." />
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia</label>
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Arena News..." />
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none resize-none font-serif" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algo extra..." />
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-serif focus:border-[#10B981]" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algum fato extra..." />
                     </div>
-                    <button onClick={handleSavePerfil} className="w-full bg-[#10B981] text-[#0B172A] font-bold py-4 rounded-xl shadow-lg mt-2 text-sm uppercase tracking-widest hover:bg-emerald-400 transition-colors">Atualizar Perfil Público</button>
+                    <button onClick={handleSavePerfil} className="w-full bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl shadow-lg mt-2 text-sm uppercase tracking-widest hover:bg-emerald-400 transition-transform transform hover:-translate-y-1">✔ Atualizar Perfil Público</button>
                  </div>
               </div>
             )}
