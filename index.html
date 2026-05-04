@@ -28,27 +28,20 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="selection:bg-[#EF4444] selection:text-white">
+<body class="selection:bg-[#EF4444] selection:text-white relative">
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useCallback, useRef } = React;
 
     // --- CONEXÃO COM O SUPABASE ---
     const SUPABASE_URL = "https://abysylbeskbzqinyxxxq.supabase.co";
     const SUPABASE_KEY = "sb_publishable_bN16VNLMRvH8BHimENwnLw_J15rCVGT";
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // GERADOR DE ID UNIVERSAL
-    const genId = () => {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-        var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    };
+    const genId = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8); return v.toString(16);
+    });
 
-    const CHAVE_API_SPORTS = ""; 
-
-    // ÍCONES
     const IconTrophy = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg>;
     const IconActivity = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>;
     const IconMenu = () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>;
@@ -60,13 +53,27 @@
     const IconCalendar = () => <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>;
     const IconLink = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>;
     const IconPlus = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>;
+    const IconUpload = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>;
+    const IconEye = () => <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>;
 
     const formatDateTime = (isoString) => {
       if (!isoString) return 'Recente';
-      try {
-        const dateObj = new Date(isoString);
-        return dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' });
-      } catch (e) { return isoString; }
+      try { return new Date(isoString).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit' }); } 
+      catch (e) { return isoString; }
+    };
+
+    const getNowLocalISO = () => {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      return now.toISOString().slice(0, 16);
+    };
+
+    // TEMPLATES DINÂMICOS DE TABELAS (O Segredo para vários esportes)
+    const TABLE_TEMPLATES = {
+      'futebol_class': { name: 'Futebol - Classificação', cols: ['Pos', 'Time', 'Pts', 'PJ', 'V', 'E', 'D', 'SG'] },
+      'estatisticas': { name: 'Futebol/Basquete - Estatísticas Jogador', cols: ['Pos', 'Jogador', 'Time', 'Gols/Pts'] },
+      'rank_simples': { name: 'Ranking Geral (Tênis/UFC/Skate)', cols: ['Pos', 'Nome', 'País/Cat', 'Pontuação'] },
+      'trends': { name: 'Assuntos do Momento (Sem Foto)', cols: ['Tópico', 'Status'] }
     };
 
     function ArenaNews() {
@@ -76,17 +83,22 @@
       
       const [isAdmin, setIsAdmin] = useState(false);
       const [adminTab, setAdminTab] = useState('noticias');
-      const [loading, setLoading] = useState(true);
+      
+      // Modal de Senha
+      const [showLogin, setShowLogin] = useState(false);
+      const [pinInput, setPinInput] = useState('');
 
+      const [initialLoading, setInitialLoading] = useState(true);
       const [categorias, setCategorias] = useState(['Todas', 'Futebol', 'Vôlei', 'Tênis de Mesa', 'Skate', 'UFC', 'Sobre Mim']);
       const [articles, setArticles] = useState([]);
       const [dashboardTables, setDashboardTables] = useState({});
       const [upcomingMatches, setUpcomingMatches] = useState({});
-      const [tickerItems, setTickerItems] = useState(["🔴 Bem-vindo ao Arena News! Conectando..."]);
+      const [tickerItems, setTickerItems] = useState(["🔴 Bem-vindo ao Arena News! Conectando com a Nuvem..."]);
       const [perfil, setPerfil] = useState({ foto: '', bio: '', curiosidades: '' });
 
-      const loadAllData = useCallback(async () => {
-        setLoading(true);
+      // O Trabalhador Assíncrono (Modo Silencioso se não for a 1ª vez)
+      const loadAllData = useCallback(async (isInitial = false) => {
+        if (isInitial) setInitialLoading(true);
         try {
           const { data: cats } = await supabase.from('categorias').select('nome');
           if (cats && cats.length > 0) setCategorias(['Todas', ...cats.map(c => c.nome)]);
@@ -111,33 +123,43 @@
           const { data: ticks } = await supabase.from('tickers').select('message');
           if (ticks && ticks.length > 0) setTickerItems(ticks.map(t => t.message));
 
-          const { data: perf } = await supabase.from('perfil').select('*').eq('id', '11111111-1111-1111-1111-111111111111');
-          if (perf && perf.length > 0) setPerfil(perf[0]);
+          const { data: perf } = await supabase.from('perfil').select('*').eq('id', '1').single();
+          if (perf) setPerfil(perf);
 
         } catch (err) {
-          console.log("Banco vazio ou offline. Inicializando limpo.");
+          console.log("Sincronização em background finalizada.");
         } finally {
-          setLoading(false);
+          if (isInitial) setInitialLoading(false);
         }
       }, []);
 
-      useEffect(() => { loadAllData(); }, [loadAllData]);
+      useEffect(() => { 
+        loadAllData(true); 
+        
+        // REALTIME ATIVADO: O site escuta o banco e atualiza sozinho sem recarregar a tela
+        const channel = supabase.channel('schema-db-changes')
+          .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+            loadAllData(false); // Carrega silenciosamente
+          })
+          .subscribe();
 
-      const getNowLocalISO = () => {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        return now.toISOString().slice(0, 16);
-      };
+        return () => { supabase.removeChannel(channel); };
+      }, [loadAllData]);
 
       const [newPost, setNewPost] = useState({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() });
       const [editingId, setEditingId] = useState(null);
       const [adminCategoryFilter, setAdminCategoryFilter] = useState('Futebol'); 
       const [newCatName, setNewCatName] = useState('');
 
-      const handleSecretAccess = () => {
-        if (isAdmin) { setIsAdmin(false); setView('home'); return; }
-        const pin = prompt("🔐 Acesso Restrito da Redação. Insira o PIN:");
-        if (pin === "2026") { setIsAdmin(true); }
+      const verifyPin = () => {
+        if (pinInput === "2026") {
+          setIsAdmin(true);
+          setShowLogin(false);
+          setPinInput('');
+        } else {
+          alert("PIN Incorreto.");
+          setPinInput('');
+        }
       };
 
       const openArticle = (article) => {
@@ -146,6 +168,8 @@
         setView('article');
       };
 
+      // === COMPONENTES VISUAIS ===
+
       const renderHeader = () => (
         <header className="bg-[#0B172A] text-white sticky top-0 z-50 shadow-2xl border-b-[3px] border-[#10B981]">
           <div className="max-w-[1400px] mx-auto px-4 h-20 flex items-center justify-between">
@@ -153,7 +177,7 @@
               <button className="lg:hidden p-2 hover:bg-white/10 rounded-full transition-colors"><IconMenu /></button>
               <div className="cursor-pointer select-none group" onClick={() => {setView('home'); setActiveCategory('Todas');}}>
                 <h1 className="text-3xl font-black tracking-tighter uppercase flex items-center gap-1">
-                  <span onDoubleClick={handleSecretAccess} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
+                  <span onDoubleClick={() => isAdmin ? (setIsAdmin(false), setView('home')) : setShowLogin(true)} className="animate-spin-logo bg-[#EF4444] text-white px-2 py-0.5 rounded shadow-[0_0_15px_rgba(239,68,68,0.5)] text-2xl group-hover:scale-110 transition-transform cursor-pointer">A</span>
                   RENA<span className="font-light text-gray-300">NEWS</span>
                 </h1>
               </div>
@@ -169,11 +193,7 @@
 
             <div className="flex items-center gap-4">
               {isAdmin && (
-                <button onClick={() => {
-                  setView(view === 'admin' ? 'home' : 'admin');
-                  setEditingId(null);
-                  setAdminTab('noticias');
-                }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
+                <button onClick={() => { setView(view === 'admin' ? 'home' : 'admin'); setEditingId(null); setAdminTab('noticias'); }} className="flex items-center gap-2 bg-[#10B981] text-[#0B172A] px-5 py-2.5 rounded-full text-xs font-black uppercase hover:bg-emerald-400 transition-all transform hover:scale-105 shadow-lg whitespace-nowrap">
                   <IconSettings /> Painel Geral
                 </button>
               )}
@@ -190,7 +210,7 @@
             </div>
             <div className="w-full overflow-hidden ml-36">
               <div className="animate-marquee-custom font-bold text-sm tracking-wide text-red-50">
-                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Aguardando Destaques...</span>}
+                {tickerItems.length > 0 ? tickerItems.map((item, i) => <span key={i} className="mx-8">{item}</span>) : <span className="mx-8">Conectado ao Portal...</span>}
               </div>
             </div>
           </div>
@@ -201,7 +221,7 @@
         <main className="max-w-[900px] mx-auto px-4 py-16 animate-fade-slide">
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100 flex flex-col md:flex-row">
             <div className="md:w-1/3 bg-[#0B172A] p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r-[3px] border-[#10B981]">
-              <img src={perfil.foto || 'https://via.placeholder.com/150?text=Foto'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
+              <img src={perfil.foto || 'https://via.placeholder.com/150?text=Autora'} className="w-40 h-40 object-cover rounded-full border-4 border-[#10B981] shadow-[0_0_20px_rgba(16,185,129,0.3)] mb-4" />
               <h2 className="text-2xl font-black text-white text-center">A Autora</h2>
             </div>
             <div className="md:w-2/3 p-10 flex flex-col gap-6">
@@ -211,12 +231,93 @@
               </div>
               <div className="border-t border-gray-100 pt-6">
                 <h3 className="text-sm font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">Curiosidades</h3>
-                <p className="text-gray-600 leading-relaxed font-serif whitespace-pre-wrap">{perfil.curiosidades || 'Nenhuma curiosidade registrada.'}</p>
+                <p className="text-gray-600 leading-relaxed font-serif whitespace-pre-wrap">{perfil.curiosidades || 'Nada registrado.'}</p>
               </div>
             </div>
           </div>
         </main>
       );
+
+      // Renderizador Dinâmico de Tabelas para a Home
+      const renderPublicTable = (tableInfo, tIndex) => {
+        const type = tableInfo.type || 'futebol_class';
+        const isTrend = type === 'trends';
+
+        return (
+          <div key={tableInfo.id || tIndex} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-lg animate-fade-slide mb-6">
+            <div className="bg-[#0B172A] p-4 flex items-center justify-between border-b-[3px] border-[#10B981]">
+              <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
+                {isTrend ? <IconTrending /> : <IconTrophy />} {tableInfo.title}
+              </h3>
+            </div>
+            <div className="p-0 overflow-x-auto">
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
+                  <tr>
+                    {TABLE_TEMPLATES[type].cols.map((col, idx) => (
+                      <th key={idx} className={`px-4 py-3 tracking-widest ${idx === 0 && !isTrend ? 'text-center w-12' : ''} ${idx > 1 ? 'text-right' : ''}`}>{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tableInfo.data || []).map((row, idx) => (
+                    <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                      
+                      {/* Lógica condicional por tipo de tabela */}
+                      {type === 'futebol_class' && (
+                        <React.Fragment>
+                          <td className={`px-4 py-3 text-center text-xs font-black ${idx === 0 ? 'text-[#10B981]' : 'text-gray-500'}`}>{idx + 1}</td>
+                          <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
+                            {row.image && <img src={row.image} className="w-6 h-6 rounded-full object-cover border border-gray-200" />} {row.team}
+                          </td>
+                          <td className="px-4 py-3 text-right font-black text-[#0B172A]">{row.stat}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.pj || '-'}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.vit || '-'}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.e || '-'}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.der || '-'}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.sg || '-'}</td>
+                        </React.Fragment>
+                      )}
+
+                      {type === 'estatisticas' && (
+                        <React.Fragment>
+                          <td className={`px-4 py-3 text-center text-xs font-black ${idx === 0 ? 'text-[#10B981]' : 'text-gray-500'}`}>{idx + 1}</td>
+                          <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
+                            {row.image && <img src={row.image} className="w-8 h-8 rounded-full object-cover border border-gray-200" />} {row.player}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500 flex items-center justify-end gap-1">
+                             {row.team_image && <img src={row.team_image} className="w-4 h-4 rounded-full object-cover" />} {row.team}
+                          </td>
+                          <td className="px-4 py-3 text-right font-black text-[#0B172A]">{row.stat}</td>
+                        </React.Fragment>
+                      )}
+
+                      {type === 'rank_simples' && (
+                        <React.Fragment>
+                          <td className={`px-4 py-3 text-center text-xs font-black ${idx === 0 ? 'text-[#10B981]' : 'text-gray-500'}`}>{idx + 1}</td>
+                          <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
+                            {row.image && <img src={row.image} className="w-8 h-8 rounded-full object-cover border border-gray-200" />} {row.team}
+                          </td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500">{row.country}</td>
+                          <td className="px-4 py-3 text-right font-black text-[#0B172A]">{row.stat}</td>
+                        </React.Fragment>
+                      )}
+
+                      {type === 'trends' && (
+                        <React.Fragment>
+                          <td className="px-4 py-3 font-bold text-[#0B172A]">{row.team}</td>
+                          <td className="px-4 py-3 text-right text-xs text-gray-500 font-bold">{row.stat}</td>
+                        </React.Fragment>
+                      )}
+
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      };
 
       const renderHomeView = () => {
         if (activeCategory === 'Sobre Mim') return renderSobreMim();
@@ -228,15 +329,14 @@
         const currentTablesArray = dashboardTables[activeCategory] || dashboardTables['Todas'] || [];
         const currentUpcoming = upcomingMatches[activeCategory] || upcomingMatches['Todas'] || [];
 
-        if (loading) return <div className="text-center py-32 text-gray-400 font-black animate-pulse uppercase tracking-widest">Carregando Banco de Dados...</div>;
+        if (initialLoading) return <div className="max-w-[1400px] mx-auto px-4 py-32 text-center font-black text-gray-300 animate-pulse text-2xl uppercase tracking-widest">Carregando Banco de Dados...</div>;
 
         return (
           <main className="max-w-[1400px] mx-auto px-4 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
             <div className="lg:col-span-8">
               {!featured && (
                 <div className="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm border-2 border-dashed">
-                  <IconActivity className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold text-gray-400">Nenhuma notícia publicada.</h2>
+                  <h2 className="text-xl font-bold text-gray-400">Nenhuma notícia publicada.</h2>
                 </div>
               )}
 
@@ -292,63 +392,7 @@
                 </div>
               )}
 
-              {currentTablesArray.map((tableInfo, tIndex) => {
-                const isExtended = tableInfo.type === 'points';
-                const hasImages = tableInfo.type !== 'trends'; // Trends não tem foto
-
-                return (
-                  <div key={tableInfo.id || tIndex} className="bg-white border border-gray-100 rounded-3xl overflow-hidden shadow-lg animate-fade-slide" style={{ animationDelay: `${tIndex * 0.1}s` }}>
-                    <div className="bg-[#0B172A] p-4 flex items-center justify-between border-b-[3px] border-[#10B981]">
-                      <h3 className="font-black text-white uppercase tracking-wider text-xs flex items-center gap-2">
-                        {tableInfo.type === 'trends' ? <IconTrending /> : <IconTrophy />} {tableInfo.title}
-                      </h3>
-                    </div>
-                    <div className="p-0 overflow-x-auto">
-                      <table className="w-full text-sm text-left whitespace-nowrap">
-                        <thead className="bg-gray-50 text-[10px] uppercase text-gray-400 font-bold border-b border-gray-100">
-                          <tr>
-                            <th className="px-4 py-2 tracking-widest">{tableInfo.type === 'trends' ? 'Tópico' : 'Competidor'}</th>
-                            <th className="px-4 py-2 text-right tracking-widest">{tableInfo.type === 'points' ? 'Pts' : (tableInfo.type === 'rank' ? 'Pos' : 'Status')}</th>
-                            {isExtended && (
-                              <React.Fragment>
-                                <th className="px-2 py-2 text-center tracking-widest text-gray-400">PJ</th>
-                                <th className="px-2 py-2 text-center tracking-widest text-gray-400">V</th>
-                                <th className="px-2 py-2 text-center tracking-widest text-gray-400">E</th>
-                                <th className="px-2 py-2 text-center tracking-widest text-gray-400">D</th>
-                              </React.Fragment>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(tableInfo.data || []).map((row, idx) => (
-                            <tr key={idx} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
-                              <td className="px-4 py-3 font-bold text-[#0B172A] flex items-center gap-3">
-                                {tableInfo.type !== 'trends' && (
-                                  <span className={`w-5 h-5 flex items-center justify-center rounded text-[10px] font-black transition-colors shrink-0 ${idx === 0 ? 'bg-[#10B981] text-[#0B172A] shadow-md transform scale-110' : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'}`}>
-                                    {idx + 1}
-                                  </span>
-                                )}
-                                {hasImages && row.image && <img src={row.image} className="w-8 h-8 rounded-full object-cover border border-gray-200 shrink-0" alt="" />}
-                                <span className="truncate max-w-[150px]">{row.team}</span>
-                              </td>
-                              <td className={`px-4 py-3 text-right text-xs font-black ${idx === 0 && tableInfo.type !== 'trends' ? 'text-[#10B981]' : 'text-[#0B172A]'}`}>{row.stat}</td>
-                              
-                              {isExtended && (
-                                <React.Fragment>
-                                  <td className="px-2 py-3 text-center text-xs text-gray-500 font-medium">{row.pj || '-'}</td>
-                                  <td className="px-2 py-3 text-center text-xs text-gray-500 font-medium">{row.vit || '-'}</td>
-                                  <td className="px-2 py-3 text-center text-xs text-gray-500 font-medium">{row.e || '-'}</td>
-                                  <td className="px-2 py-3 text-center text-xs text-gray-500 font-medium">{row.der || '-'}</td>
-                                </React.Fragment>
-                              )}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })}
+              {currentTablesArray.map((tableInfo, idx) => renderPublicTable(tableInfo, idx))}
             </aside>
           </main>
         );
@@ -385,14 +429,14 @@
         );
       };
 
+      // ==========================================
+      // PAINEL DE REDAÇÃO (SEGURO E ADAPTÁVEL)
+      // ==========================================
       const renderAdminPanel = () => {
+        // Conversor Universal de Imagem para Base64
         const handleImageUpload = (e, callback) => {
           const file = e.target.files[0];
-          if (file) { 
-            const reader = new FileReader(); 
-            reader.onloadend = () => callback(reader.result); 
-            reader.readAsDataURL(file); 
-          }
+          if (file) { const reader = new FileReader(); reader.onloadend = () => callback(reader.result); reader.readAsDataURL(file); }
         };
 
         const handleSaveArticle = async (e) => {
@@ -400,33 +444,29 @@
           try {
             if (editingId) {
               const updated = { ...newPost, id: editingId };
-              const { error } = await supabase.from('noticias').update(updated).eq('id', editingId);
-              if(error) { alert("Erro do Supabase: " + error.message); return; }
-              alert("Matéria editada com sucesso!");
+              await supabase.from('noticias').update(updated).eq('id', editingId);
+              setArticles(articles.map(a => a.id === editingId ? updated : a));
             } else {
               const obj = { id: genId(), ...newPost, views: '0' };
-              const { error } = await supabase.from('noticias').insert([obj]);
-              if(error) { alert("Erro do Supabase: " + error.message); return; }
-              alert("Notícia publicada no portal!");
+              await supabase.from('noticias').insert([obj]);
+              setArticles([obj, ...articles]);
             }
+            alert("Notícia salva!");
             setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() }); 
-            setEditingId(null); 
-            loadAllData();
-            setView('home'); 
-          } catch(err) { alert("Erro na requisição."); }
+            setEditingId(null); setView('home'); 
+          } catch(err) { alert("Erro de conexão."); }
         };
 
         const handleRemoveArticle = async (id) => {
-          if(confirm('Tem certeza que deseja apagar essa notícia?')) {
-            const { error } = await supabase.from('noticias').delete().eq('id', id);
-            if(error) { alert("Erro: " + error.message); return; }
-            alert("Notícia apagada.");
-            loadAllData();
+          if(confirm('Apagar notícia?')) {
+            await supabase.from('noticias').delete().eq('id', id);
+            setArticles(articles.filter(x => x.id !== id));
           }
         };
 
+        // Gestão Avançada de Tabelas
         const handleAddTable = () => {
-          const nova = { id: `temp-${Date.now()}`, category: adminCategoryFilter, title: 'Novo Campeonato', type: 'points', data: [{ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' }] };
+          const nova = { id: `temp-${Date.now()}`, category: adminCategoryFilter, title: 'Novo Campeonato', type: 'futebol_class', data: [{ team: '', image: '', stat: '', pj: '', vit: '', e: '', der: '', sg: '' }] };
           const updated = { ...dashboardTables };
           if (!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
           updated[adminCategoryFilter].push(nova);
@@ -438,22 +478,16 @@
           updated[adminCategoryFilter][tableIndex].data[rowIndex][field] = value;
           setDashboardTables(updated);
         };
-        
-        const handleUpdateTableType = (tableIndex, value) => {
-          const updated = { ...dashboardTables };
-          updated[adminCategoryFilter][tableIndex].type = value;
-          setDashboardTables(updated);
-        };
 
-        const handleUpdateTableTitle = (tableIndex, value) => {
+        const handleUpdateTableConfig = (tableIndex, field, value) => {
           const updated = { ...dashboardTables };
-          updated[adminCategoryFilter][tableIndex].title = value;
+          updated[adminCategoryFilter][tableIndex][field] = value;
           setDashboardTables(updated);
         };
 
         const handleAddTableRow = (tableIndex) => {
           const updated = { ...dashboardTables };
-          updated[adminCategoryFilter][tableIndex].data.push({ team: '', stat: '', image: '', pj: '', vit: '', e: '', der: '' });
+          updated[adminCategoryFilter][tableIndex].data.push({ team: '', player: '', image: '', team_image: '', stat: '', pj: '', vit: '', e: '', der: '', sg: '', country: '' });
           setDashboardTables(updated);
         };
 
@@ -467,18 +501,9 @@
           try {
             const isNew = table.id.startsWith('temp-');
             const payload = { id: isNew ? genId() : table.id, category: table.category, title: table.title, type: table.type, data: table.data };
-            
-            let error;
-            if (isNew) {
-                const res = await supabase.from('tabelas_dashboard').insert([payload]);
-                error = res.error;
-            } else {
-                const res = await supabase.from('tabelas_dashboard').update(payload).eq('id', table.id);
-                error = res.error;
-            }
-            
-            if (error) { alert("Erro do Supabase: " + error.message); return; }
-            alert('Campeonato salvo com sucesso no Portal Público!');
+            if (isNew) { await supabase.from('tabelas_dashboard').insert([payload]); } 
+            else { await supabase.from('tabelas_dashboard').update(payload).eq('id', table.id); }
+            alert('Tabela salva no portal!');
             loadAllData();
           } catch(e) { alert("Falha na rede."); }
         };
@@ -486,86 +511,42 @@
         const handleRemoveTable = async (tIndex) => {
           if(confirm('Excluir este campeonato?')) {
             const table = dashboardTables[adminCategoryFilter][tIndex];
-            if (!table.id.startsWith('temp-')) {
-              const { error } = await supabase.from('tabelas_dashboard').delete().eq('id', table.id);
-              if(error) { alert("Erro: " + error.message); return; }
-            }
-            alert("Campeonato removido.");
-            loadAllData();
+            if (!table.id.startsWith('temp-')) await supabase.from('tabelas_dashboard').delete().eq('id', table.id);
+            const updated = { ...dashboardTables };
+            updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== tIndex);
+            setDashboardTables(updated);
           }
         };
 
         const handleAddCategory = async () => {
           if(!newCatName) return;
-          const { error } = await supabase.from('categorias').insert([{ nome: newCatName }]);
-          if (error) { alert("Erro: " + error.message); return; }
-          alert("Novo esporte adicionado!");
-          setNewCatName('');
-          loadAllData();
+          await supabase.from('categorias').insert([{ nome: newCatName }]);
+          setCategorias([...categorias, newCatName]); setNewCatName(''); alert("Esporte adicionado!");
         };
 
-        const handleUpdateUpcoming = (index, field, value) => {
-          const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
-          updated[adminCategoryFilter][index][field] = value; setUpcomingMatches(updated);
-        };
-        const handleAddUpcoming = () => {
-          const updated = { ...upcomingMatches }; if(!updated[adminCategoryFilter]) updated[adminCategoryFilter] = [];
-          updated[adminCategoryFilter].push({ cup: 'Competição', match: 'Time A x Time B', date: getNowLocalISO() }); setUpcomingMatches(updated);
-        };
-        const handleRemoveUpcoming = (index) => {
-          const updated = { ...upcomingMatches }; updated[adminCategoryFilter] = updated[adminCategoryFilter].filter((_, i) => i !== index); setUpcomingMatches(updated);
-        };
         const handleSaveTransmissionsToCloud = async () => {
           const list = upcomingMatches[adminCategoryFilter] || [];
           await supabase.from('transmissoes').delete().eq('category', adminCategoryFilter);
-          
-          if (list.length > 0) {
-            const payload = list.map(m => ({ id: genId(), category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date }));
-            const { error } = await supabase.from('transmissoes').insert(payload);
-            if (error) { alert("Erro: " + error.message); return; }
-          }
-          alert("Agenda sincronizada com sucesso!");
-          loadAllData();
+          if (list.length > 0) await supabase.from('transmissoes').insert(list.map(m => ({ id: genId(), category: adminCategoryFilter, cup: m.cup, match: m.match, date: m.date })));
+          alert("Agenda sincronizada!");
         };
 
-        const handleUpdateTicker = (index, value) => { const updated = [...tickerItems]; updated[index] = value; setTickerItems(updated); };
-        const handleAddTicker = () => { setTickerItems([...tickerItems, "Novo destaque..."]); };
-        const handleRemoveTicker = (index) => { setTickerItems(tickerItems.filter((_, i) => i !== index)); };
         const handleSaveTickerToCloud = async () => {
-          await supabase.from('tickers').delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
-          if(tickerItems.length > 0) {
-            const payload = tickerItems.map(m => ({ id: genId(), message: m }));
-            const { error } = await supabase.from('tickers').insert(payload);
-            if (error) { alert("Erro: " + error.message); return; }
-          }
-          alert("Giro atualizado e no ar!");
-          loadAllData();
+          await supabase.from('tickers').delete().neq('id', '99999'); 
+          if(tickerItems.length > 0) await supabase.from('tickers').insert(tickerItems.map(m => ({ id: genId(), message: m })));
+          alert("Giro atualizado!");
         };
 
         const handleSavePerfil = async () => {
-          const perfilId = '11111111-1111-1111-1111-111111111111'; 
-          const { data } = await supabase.from('perfil').select('id').eq('id', perfilId);
-          let error;
-          
-          if (data && data.length > 0) {
-              const res = await supabase.from('perfil').update(perfil).eq('id', perfilId);
-              error = res.error;
-          } else {
-              const res = await supabase.from('perfil').insert([{ id: perfilId, ...perfil }]);
-              error = res.error;
-          }
-          
-          if(error) { alert("Erro do banco: " + error.message); return; }
-          alert("Página Sobre Mim atualizada no portal!");
-          loadAllData();
+          await supabase.from('perfil').upsert({ id: '1', ...perfil });
+          alert("Página Sobre Mim atualizada!");
         };
 
         return (
           <div className="max-w-[1400px] mx-auto px-4 py-8 animate-fade-slide">
-            
-            <div className="flex flex-wrap gap-4 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
+            <div className="flex flex-wrap gap-2 mb-8 bg-white p-3 rounded-2xl shadow-sm border border-gray-100 overflow-x-auto">
               {['noticias', 'tabelas', 'transmissoes', 'ticker', 'sobre'].map(t => (
-                <button key={t} onClick={() => setAdminTab(t)} className={`flex-1 md:flex-none px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-colors ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
+                <button key={t} onClick={() => setAdminTab(t)} className={`px-6 py-3 rounded-xl font-bold uppercase tracking-widest text-[10px] md:text-xs transition-colors ${adminTab === t ? 'bg-[#0B172A] text-[#10B981] shadow-md' : 'text-gray-500 hover:bg-gray-50'}`}>
                   {t === 'sobre' ? 'Sobre Mim' : t}
                 </button>
               ))}
@@ -576,50 +557,53 @@
                 <div className="lg:col-span-8 bg-white p-8 rounded-3xl shadow-xl border border-gray-100">
                   <form onSubmit={handleSaveArticle} className="flex flex-col gap-6">
                     <div>
-                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Manchete (Título)</label>
-                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold mt-2 outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
+                      <label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Manchete (Título)</label>
+                      <input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-lg font-bold outline-none focus:border-[#10B981]" value={newPost.title} onChange={e => setNewPost({...newPost, title: e.target.value})} />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Editoria:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold mt-2 outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Editoria:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none" value={newPost.category} onChange={e => setNewPost({...newPost, category: e.target.value})}>
                           {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                         </select>
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconClock /> Data/Hora:</label>
-                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconClock /> Data/Hora:</label>
+                        <input type="datetime-local" className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none text-sm font-bold" value={newPost.date} onChange={e => setNewPost({...newPost, date: e.target.value})} />
                       </div>
                       <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1"><IconLink /> Notícia Anterior:</label>
-                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 mt-2 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
+                        <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest flex items-center gap-1 mb-2"><IconLink /> Notícia Anterior:</label>
+                        <select className="w-full bg-white border border-gray-300 rounded-lg p-3 outline-none" value={newPost.linkedArticleId} onChange={e => setNewPost({...newPost, linkedArticleId: e.target.value})}>
                           <option value="">Não vincular</option>
                           {articles.filter(a => a.id !== editingId).map(a => <option key={a.id} value={a.id}>{(a.title || 'Sem título').substring(0, 25)}...</option>)}
                         </select>
                       </div>
                     </div>
-                    <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300 flex flex-col gap-4">
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block">Foto da Matéria</label>
-                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, (res) => setNewPost({...newPost, image: res}))} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
-                      {newPost.image && <img src={newPost.image} className="h-40 object-cover rounded-lg shadow-md border border-gray-200"/>}
+                    <div className="bg-gray-50 p-6 rounded-xl border-2 border-dashed border-gray-300 flex flex-col items-center">
+                      <label className="w-full text-center cursor-pointer">
+                        <span className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-3">Foto da Matéria (Clique aqui)</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => setNewPost({...newPost, image: res}))} />
+                        <div className="bg-[#10B981] text-[#0B172A] p-3 rounded-full inline-block font-black"><IconUpload /></div>
+                      </label>
+                      {newPost.image && <img src={newPost.image} className="mt-4 h-40 object-cover rounded-lg shadow-md border border-gray-200 w-full max-w-md"/>}
                     </div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 mt-2 outline-none focus:border-[#10B981]" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
-                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 mt-2 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Lide (Resumo)</label><input className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 outline-none focus:border-[#10B981]" value={newPost.excerpt} onChange={e => setNewPost({...newPost, excerpt: e.target.value})} /></div>
+                    <div><label className="text-xs font-bold text-gray-400 uppercase tracking-widest block mb-2">Texto Completo</label><textarea rows="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-5 outline-none resize-none font-serif text-lg focus:border-[#10B981]" value={newPost.content} onChange={e => setNewPost({...newPost, content: e.target.value})} /></div>
                     <div className="flex gap-4">
                       <button type="submit" className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl uppercase tracking-widest text-sm shadow-lg hover:bg-emerald-400 transition-all">{editingId ? 'Salvar Edição' : 'Publicar Notícia'}</button>
                       {editingId && <button type="button" onClick={() => {setEditingId(null); setNewPost({ title: '', category: 'Futebol', excerpt: '', image: '', content: '', linkedArticleId: '', date: getNowLocalISO() })}} className="bg-gray-100 text-gray-600 font-bold py-4 px-8 rounded-xl uppercase">Cancelar</button>}
                     </div>
                   </form>
                 </div>
-                <div className="lg:col-span-4 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 h-fit">
-                  <h3 className="font-black text-[#0B172A] mb-4 uppercase text-sm tracking-wider">Histórico de Publicações</h3>
-                  <div className="flex flex-col gap-3 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="lg:col-span-4 bg-white p-6 rounded-3xl shadow-xl border border-gray-100 h-[800px] flex flex-col">
+                  <h3 className="font-black text-[#0B172A] mb-4 uppercase text-sm tracking-wider shrink-0">Histórico de Publicações</h3>
+                  <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar pr-2 flex-1">
                     {articles.map(a => (
                       <div key={a.id} className="bg-gray-50 p-4 rounded-2xl flex flex-col border border-gray-100 hover:border-[#10B981] transition-colors">
                         <div className="mb-2"><span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{a.category || 'Sem Cat'}</span><p className="text-sm font-bold text-[#0B172A] line-clamp-2 mt-1">{a.title || 'Sem Título'}</p></div>
                         <div className="flex justify-end gap-2 border-t border-gray-200 pt-2">
-                          <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 p-2 rounded-xl text-[10px] font-black uppercase">Editar</button>
-                          <button onClick={() => handleRemoveArticle(a.id)} className="text-red-500 bg-red-50 p-2 rounded-xl text-[10px] font-black uppercase">Apagar</button>
+                          <button onClick={() => {setNewPost(a); setEditingId(a.id); window.scrollTo({top:0, behavior:'smooth'});}} className="text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Editar</button>
+                          <button onClick={() => handleRemoveArticle(a.id)} className="text-red-500 bg-red-50 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase">Apagar</button>
                         </div>
                       </div>
                     ))}
@@ -629,77 +613,126 @@
             )}
 
             {adminTab === 'tabelas' && (
-              <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-5xl mx-auto">
-                 <div className="mb-6">
-                    <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Estatísticas, Ranking e Tabelas</h2>
-                    <p className="text-sm text-gray-500 font-medium">Use a coluna de Upload para enviar o escudo do time ou a foto do atleta.</p>
+              <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-[1200px] mx-auto">
+                 <div className="mb-6 flex justify-between items-end">
+                    <div>
+                      <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Painel de Competições</h2>
+                      <p className="text-sm text-gray-500 font-medium">Você pode escolher o formato da tabela de acordo com o esporte.</p>
+                    </div>
                  </div>
                  
-                 <div className="mb-8 p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center gap-4">
+                 <div className="mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-200 flex flex-col md:flex-row items-center gap-6">
                    <div className="flex-1 w-full">
-                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Esporte da Tabela:</label>
-                     <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none shadow-sm mt-1" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
+                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Filtrar por Editoria:</label>
+                     <select className="w-full bg-white border border-gray-300 rounded-lg p-3 font-bold outline-none shadow-sm mt-2" value={adminCategoryFilter} onChange={e => setAdminCategoryFilter(e.target.value)}>
                         {categorias.filter(c => c !== 'Todas' && c !== 'Sobre Mim').map(c => <option key={c}>{c}</option>)}
                      </select>
                    </div>
                    <div className="flex-1 w-full">
-                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Criar Novo Esporte:</label>
-                     <div className="flex gap-2 mt-1">
+                     <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest">Nova Editoria de Esporte:</label>
+                     <div className="flex gap-2 mt-2">
                        <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 outline-none focus:border-[#10B981]" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Ex: Fórmula 1" />
-                       <button onClick={handleAddCategory} className="bg-[#10B981] px-4 rounded-lg text-[#0B172A] hover:bg-emerald-400 transition-colors"><IconPlus/></button>
+                       <button onClick={handleAddCategory} className="bg-[#10B981] px-5 rounded-lg text-[#0B172A] font-black hover:bg-emerald-400 transition-colors"><IconPlus/></button>
                      </div>
                    </div>
                  </div>
 
                  <div className="grid grid-cols-1 gap-8">
-                    {(dashboardTables[adminCategoryFilter] || []).map((table, tIndex) => (
+                    {(dashboardTables[adminCategoryFilter] || []).map((table, tIndex) => {
+                      const type = table.type || 'futebol_class';
+                      
+                      return (
                       <div key={table.id || tIndex} className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                         
                         <div className="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4 gap-4">
-                           <input className="w-full md:flex-1 bg-transparent font-black text-[#0B172A] text-lg outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableTitle(tIndex, e.target.value)} placeholder="Nome da Tabela (Ex: Brasileirão)" />
-                           <select className="bg-white border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none shadow-sm" value={table.type || 'points'} onChange={(e) => handleUpdateTableType(tIndex, e.target.value)}>
-                             <option value="points">Classificação c/ Estatísticas (V, E, D)</option>
-                             <option value="rank">Ranking Simples (Com Foto)</option>
-                             <option value="trends">Tópicos em Alta (Sem Foto)</option>
-                           </select>
-                           <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors" title="Excluir Tabela Inteira"><IconTrash/></button>
+                           <input className="w-full md:flex-1 bg-transparent font-black text-[#0B172A] text-xl outline-none focus:border-[#10B981]" value={table.title || ''} onChange={(e) => handleUpdateTableConfig(tIndex, 'title', e.target.value)} placeholder="Nome (Ex: Brasileirão)" />
+                           <div className="flex items-center gap-3">
+                             <select className="bg-white border border-gray-300 rounded-lg p-2 text-xs font-bold outline-none shadow-sm text-gray-700" value={type} onChange={(e) => handleUpdateTableConfig(tIndex, 'type', e.target.value)}>
+                               {Object.keys(TABLE_TEMPLATES).map(key => <option key={key} value={key}>{TABLE_TEMPLATES[key].name}</option>)}
+                             </select>
+                             <button onClick={() => handleRemoveTable(tIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors border border-red-200 bg-white" title="Excluir Tabela"><IconTrash/></button>
+                           </div>
                         </div>
                         
-                        <div className="flex flex-col gap-3 mb-2">
+                        <div className="flex flex-col gap-3">
+                          {/* CABEÇALHO DINÂMICO PARA O ADMIN */}
+                          <div className="flex gap-2 px-1 hidden md:flex">
+                             {type === 'futebol_class' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Escudo</span><span className="w-16 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">PJ</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">V</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">E</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">D</span><span className="w-12 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">SG</span></React.Fragment>}
+                             {type === 'estatisticas' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Jogador / Foto</span><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Time / Escudo</span><span className="w-20 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Gols/Pts</span></React.Fragment>}
+                             {type === 'rank_simples' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Nome / Foto</span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">País/Cat</span><span className="w-20 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Pts/Pos</span></React.Fragment>}
+                             {type === 'trends' && <React.Fragment><span className="flex-1 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tópico (Assunto)</span><span className="w-32 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Status</span></React.Fragment>}
+                             <span className="w-10"></span>
+                          </div>
+
                           {(table.data || []).map((row, rIndex) => (
                             <div key={rIndex} className="flex flex-wrap md:flex-nowrap gap-2 bg-white p-3 border border-gray-200 rounded-xl items-center shadow-sm">
-                              {table.type !== 'trends' && (
-                                <label className="flex items-center justify-center bg-gray-100 p-2 rounded cursor-pointer hover:bg-gray-200 w-10 h-10 transition-colors border border-dashed border-gray-400" title="Fazer Upload da Foto">
-                                  <IconPlus />
-                                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
-                                </label>
-                              )}
-                              {table.type !== 'trends' && row.image && <img src={row.image} className="w-10 h-10 rounded-full object-cover border-2 border-gray-100" />}
-
-                              <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome" />
-                              <input className="w-20 md:w-16 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts/Pos" />
                               
-                              {table.type === 'points' && (
+                              {type === 'futebol_class' && (
                                 <React.Fragment>
-                                  <input className="w-12 md:w-12 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.pj || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'pj', e.target.value)} placeholder="PJ" />
-                                  <input className="w-12 md:w-12 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.vit || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'vit', e.target.value)} placeholder="V" />
-                                  <input className="w-12 md:w-12 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.e || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'e', e.target.value)} placeholder="E" />
-                                  <input className="w-12 md:w-12 bg-gray-50 border border-gray-300 rounded p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.der || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'der', e.target.value)} placeholder="D" />
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
+                                  </label>
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Time" />
+                                  <input className="w-16 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts" />
+                                  <input className="w-12 bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.pj || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'pj', e.target.value)} placeholder="PJ" />
+                                  <input className="w-12 bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.vit || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'vit', e.target.value)} placeholder="V" />
+                                  <input className="w-12 bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.e || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'e', e.target.value)} placeholder="E" />
+                                  <input className="w-12 bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.der || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'der', e.target.value)} placeholder="D" />
+                                  <input className="w-12 bg-gray-50 border border-gray-300 rounded-lg p-2 text-xs text-center outline-none focus:border-[#10B981]" value={row.sg || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'sg', e.target.value)} placeholder="SG" />
                                 </React.Fragment>
                               )}
-                              
-                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors ml-auto"><IconTrash/></button>
+
+                              {type === 'estatisticas' && (
+                                <React.Fragment>
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto Jogador">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
+                                  </label>
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.player || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'player', e.target.value)} placeholder="Jogador" />
+                                  
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0 ml-2" title="Escudo Time">
+                                    {row.team_image ? <img src={row.team_image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'team_image', res))} />
+                                  </label>
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Time" />
+                                  
+                                  <input className="w-20 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Nº" />
+                                </React.Fragment>
+                              )}
+
+                              {type === 'rank_simples' && (
+                                <React.Fragment>
+                                  <label className="bg-gray-50 border border-gray-300 p-2 rounded-lg cursor-pointer hover:bg-gray-100 flex items-center justify-center shrink-0" title="Foto/Bandeira">
+                                    {row.image ? <img src={row.image} className="w-6 h-6 rounded-full object-cover" /> : <IconUpload/>}
+                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => handleUpdateTableData(tIndex, rIndex, 'image', res))} />
+                                  </label>
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Nome do Atleta" />
+                                  <input className="w-32 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm text-center outline-none focus:border-[#10B981]" value={row.country || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'country', e.target.value)} placeholder="País (Ex: BRA)" />
+                                  <input className="w-20 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Pts/Pos" />
+                                </React.Fragment>
+                              )}
+
+                              {type === 'trends' && (
+                                <React.Fragment>
+                                  <input className="w-full md:flex-1 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={row.team || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'team', e.target.value)} placeholder="Assunto do Momento" />
+                                  <input className="w-32 bg-gray-50 border border-gray-300 rounded-lg p-2 text-sm font-bold text-center outline-none focus:border-[#10B981]" value={row.stat || ''} onChange={(e) => handleUpdateTableData(tIndex, rIndex, 'stat', e.target.value)} placeholder="Status (🔥)" />
+                                </React.Fragment>
+                              )}
+
+                              <button onClick={() => handleRemoveTableRow(tIndex, rIndex)} className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors ml-auto"><IconTrash/></button>
                             </div>
                           ))}
                         </div>
-                        <div className="flex flex-col md:flex-row gap-4 mt-4 border-t border-gray-200 pt-4">
-                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-lg hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Linha Nova</button>
-                          <button onClick={() => handleSaveTableToCloud(table)} className="flex-1 bg-[#0B172A] text-[#10B981] font-black py-3 rounded-lg hover:bg-gray-800 transition-colors text-xs uppercase tracking-widest shadow-lg border border-[#10B981]">✔ Salvar Tabela na Nuvem</button>
+                        <div className="flex flex-col md:flex-row gap-4 mt-6">
+                          <button onClick={() => handleAddTableRow(tIndex)} className="flex-1 bg-white text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors text-xs uppercase tracking-widest border-2 border-dashed border-gray-300">+ Linha</button>
+                          <button onClick={() => handleSaveTableToCloud(table)} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-3 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Tabela na Nuvem</button>
                         </div>
                       </div>
-                    ))}
+                    );
+                    })}
                     
-                    <button onClick={handleAddTable} className="w-full bg-white text-[#0B172A] font-black py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors text-sm uppercase tracking-widest border-2 border-dashed border-[#10B981]"><IconPlus/> Criar Nova Tabela Aqui</button>
+                    <button onClick={handleAddTable} className="w-full bg-[#0B172A] text-white font-black py-5 rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors text-sm uppercase tracking-widest shadow-xl"><IconPlus/> Criar Nova Tabela Aqui</button>
                  </div>
               </div>
             )}
@@ -711,16 +744,16 @@
                  </select>
                  <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                    {(upcomingMatches[adminCategoryFilter] || []).map((match, mIndex) => (
-                     <div key={mIndex} className="flex flex-col md:flex-row gap-3 mb-4 bg-white p-3 rounded-lg border border-gray-200 items-center shadow-sm">
-                       <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
-                       <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded p-2 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
-                       <input type="datetime-local" className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded p-2 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} />
-                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded transition-colors"><IconTrash/></button>
+                     <div key={mIndex} className="flex flex-col md:flex-row gap-3 mb-4 bg-white p-3 rounded-xl border border-gray-200 items-center shadow-sm">
+                       <input className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded-lg p-3 text-xs font-bold uppercase outline-none focus:border-[#10B981]" value={match.cup || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'cup', e.target.value)} placeholder="Campeonato"/>
+                       <input className="w-full md:w-2/4 bg-gray-50 border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-[#10B981]" value={match.match || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'match', e.target.value)} placeholder="Equipe A x Equipe B"/>
+                       <input type="datetime-local" className="w-full md:w-1/4 bg-gray-50 border border-gray-300 rounded-lg p-3 text-xs font-bold outline-none focus:border-[#10B981]" value={match.date || ''} onChange={(e) => handleUpdateUpcoming(mIndex, 'date', e.target.value)} />
+                       <button onClick={() => handleRemoveUpcoming(mIndex)} className="text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors"><IconTrash/></button>
                      </div>
                    ))}
-                   <div className="flex flex-col md:flex-row gap-4 mt-4">
-                     <button onClick={handleAddUpcoming} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Jogo</button>
-                     <button onClick={handleSaveTransmissionsToCloud} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-3 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Agenda Inteira</button>
+                   <div className="flex flex-col md:flex-row gap-4 mt-6">
+                     <button onClick={handleAddUpcoming} className="flex-1 bg-white border-2 border-dashed border-gray-300 text-gray-600 font-bold py-4 rounded-xl hover:bg-gray-50 transition-colors text-xs uppercase tracking-widest">+ Adicionar Jogo</button>
+                     <button onClick={handleSaveTransmissionsToCloud} className="flex-1 bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl hover:bg-emerald-400 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Salvar Agenda</button>
                    </div>
                  </div>
               </div>
@@ -734,13 +767,13 @@
                  <div className="flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
                     {tickerItems.map((item, index) => (
                       <div key={index} className="flex gap-2">
-                        <input className="flex-1 bg-white border border-gray-300 rounded-lg p-3 text-sm font-bold outline-none focus:border-[#10B981]" value={item} onChange={(e) => handleUpdateTicker(index, e.target.value)} />
+                        <input className="flex-1 bg-white border border-gray-300 rounded-lg p-4 text-sm font-bold outline-none focus:border-[#10B981]" value={item} onChange={(e) => handleUpdateTicker(index, e.target.value)} />
                         <button onClick={() => handleRemoveTicker(index)} className="bg-white border border-gray-300 text-red-500 px-4 rounded-lg hover:bg-red-50 transition-colors"><IconTrash/></button>
                       </div>
                     ))}
                     <div className="flex gap-4 mt-4">
-                      <button onClick={handleAddTicker} className="flex-1 bg-gray-200 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-300 transition-colors text-xs uppercase tracking-widest border border-dashed border-gray-400">+ Adicionar Frase</button>
-                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-black py-3 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar Giro no Ar</button>
+                      <button onClick={handleAddTicker} className="flex-1 bg-white border-2 border-dashed border-gray-300 text-gray-600 font-bold py-4 rounded-xl hover:bg-gray-50 transition-colors text-xs uppercase tracking-widest">+ Adicionar Frase</button>
+                      <button onClick={handleSaveTickerToCloud} className="flex-1 bg-[#EF4444] text-white font-black py-4 rounded-xl hover:bg-red-500 transition-colors text-xs uppercase tracking-widest shadow-lg">✔ Colocar no Ar</button>
                     </div>
                  </div>
               </div>
@@ -750,35 +783,59 @@
               <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 max-w-3xl mx-auto">
                  <div className="mb-8">
                     <h2 className="text-2xl font-black text-[#0B172A] tracking-tight">Perfil: Sobre a Autora</h2>
-                    <p className="text-sm text-gray-500 font-medium">Atualize suas informações profissionais para a aba "Sobre Mim".</p>
                  </div>
                  <div className="flex flex-col gap-6 bg-gray-50 p-6 rounded-2xl border border-gray-200 shadow-inner">
-                    <div className="bg-white border border-gray-300 rounded-lg p-4">
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-3">Sua Foto de Perfil</label>
-                      <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, (res) => setPerfil({...perfil, foto: res}))} className="block w-full text-sm text-gray-500 file:mr-4 file:py-3 file:px-6 file:rounded-full file:bg-[#10B981] file:text-[#0B172A] file:font-bold cursor-pointer file:border-0" />
-                      {perfil.foto && <img src={perfil.foto} className="mt-4 w-32 h-32 object-cover rounded-full border-4 border-[#10B981] shadow-md"/>}
+                    <div className="bg-white border border-gray-300 rounded-xl p-6 text-center">
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-4">Sua Foto de Perfil</label>
+                      <div className="flex flex-col items-center gap-4">
+                        {perfil.foto ? <img src={perfil.foto} className="w-32 h-32 object-cover rounded-full border-4 border-[#10B981] shadow-md"/> : <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center border-4 border-gray-300"><IconActivity/></div>}
+                        <label className="cursor-pointer bg-[#0B172A] text-white px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                          Carregar Nova Foto
+                          <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, (res) => setPerfil({...perfil, foto: res}))} />
+                        </label>
+                      </div>
                     </div>
                     <div>
                       <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Biografia Curta</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Arena News..." />
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-medium focus:border-[#10B981]" value={perfil.bio || ''} onChange={e => setPerfil({...perfil, bio: e.target.value})} placeholder="Escreva sobre sua carreira e o Arena News..." />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades / Prêmios</label>
-                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-lg p-4 outline-none resize-none font-serif focus:border-[#10B981]" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algum fato extra, currículo..." />
+                      <label className="text-xs font-bold text-[#0B172A] uppercase tracking-widest block mb-2">Curiosidades</label>
+                      <textarea rows="4" className="w-full bg-white border border-gray-300 rounded-xl p-4 outline-none resize-none font-serif focus:border-[#10B981]" value={perfil.curiosidades || ''} onChange={e => setPerfil({...perfil, curiosidades: e.target.value})} placeholder="Algum fato extra..." />
                     </div>
-                    <button onClick={handleSavePerfil} className="w-full bg-[#10B981] text-[#0B172A] font-black py-4 rounded-xl shadow-lg mt-2 text-sm uppercase tracking-widest hover:bg-emerald-400 transition-transform transform hover:-translate-y-1">✔ Atualizar Perfil Público</button>
+                    <button onClick={handleSavePerfil} className="w-full bg-[#10B981] text-[#0B172A] font-black py-5 rounded-xl shadow-lg mt-2 text-sm uppercase tracking-widest hover:bg-emerald-400 transition-transform transform hover:-translate-y-1">✔ Atualizar Perfil Público</button>
                  </div>
               </div>
             )}
-
           </div>
         );
       }
 
       return (
-        <div>
+        <div className="relative min-h-screen">
           {renderHeader()}
           {renderTicker()}
+          
+          {/* MODAL DE SENHA */}
+          {showLogin && (
+            <div className="fixed inset-0 bg-[#0B172A]/90 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-slide">
+              <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full border border-gray-200 text-center">
+                 <div className="w-16 h-16 bg-[#10B981] text-[#0B172A] rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <IconSettings />
+                 </div>
+                 <h3 className="font-black text-2xl text-[#0B172A] mb-2 tracking-tight">Redação</h3>
+                 <p className="text-sm text-gray-500 font-medium mb-8">Insira o PIN de acesso.</p>
+                 
+                 <input type="password" autoFocus className="w-full bg-gray-50 border-2 border-gray-200 text-[#0B172A] p-4 rounded-xl mb-6 text-center text-3xl font-black tracking-[0.5em] outline-none focus:border-[#10B981] focus:bg-white transition-colors" value={pinInput} onChange={e => setPinInput(e.target.value)} onKeyDown={e => {if(e.key === 'Enter') verifyPin()}} placeholder="****" maxLength="4" />
+                 
+                 <div className="flex gap-3">
+                   <button onClick={() => {setShowLogin(false); setPinInput('');}} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors">Voltar</button>
+                   <button onClick={verifyPin} className="flex-1 bg-[#0B172A] text-[#10B981] font-black py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors shadow-md">Entrar</button>
+                 </div>
+              </div>
+            </div>
+          )}
+
           {view === 'home' && renderHomeView()}
           {view === 'article' && renderArticleView()}
           {view === 'admin' && renderAdminPanel()}
